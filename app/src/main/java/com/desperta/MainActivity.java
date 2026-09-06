@@ -362,7 +362,7 @@ public class MainActivity extends Activity {
                         true)
                     .show());
     time.setTextSize(38);
-    time.setHeight(d(90));
+    time.getLayoutParams().height = d(90);
     body.addView(time);
     note(remaining(Scheduler.next(draft, System.currentTimeMillis())));
     LinearLayout daysBox = box();
