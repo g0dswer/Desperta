@@ -45,6 +45,31 @@ public class EngineFlowTest {
   }
 
   @Test
+  public void staleAcceptedResultCannotAdvanceTheNextMission() throws Exception {
+    Alarm alarm = alarm(41991);
+    alarm.missions.add(new Alarm.Mission("barcode", "FIRST", 1));
+    alarm.missions.add(new Alarm.Mission("barcode", "SECOND", 1));
+    Store.save(context, alarm);
+    AlarmService.start(context, alarm.id, false);
+    assertNotNull(waitForSession(alarm.id, 4000));
+    AlarmService.missionResult(context, alarm.id, 0, true);
+    SystemClock.sleep(350);
+    assertEquals(1, Store.getSession(context).optInt("missionIndex"));
+    AlarmService.missionResult(context, alarm.id, 0, true);
+    SystemClock.sleep(350);
+    assertNotNull(Store.getSession(context));
+    assertEquals(1, Store.getSession(context).optInt("missionIndex"));
+    assertEquals(0, Store.history(context).length());
+    AlarmService.missionResult(context, alarm.id, 1, true);
+    waitForNoSession(4000);
+    AlarmService.missionResult(context, alarm.id, 1, true);
+    // A stale completion must not restart a foreground service and crash on its timeout.
+    SystemClock.sleep(6000);
+    assertEquals(null, Store.getSession(context));
+    assertEquals(1, Store.history(context).length());
+  }
+
+  @Test
   public void alarmPendingIntentsKeepNormalSnoozeWakeAndPreviewSeparate() {
     Alarm alarm = new Alarm();
     alarm.id = 41001;

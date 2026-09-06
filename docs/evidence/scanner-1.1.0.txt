@@ -1,0 +1,9 @@
+
+com.desperta.ScannerAppearanceTest:.
+com.desperta.CameraPipelineTest:.
+
+Time: 5.326
+
+OK (2 tests)
+
+

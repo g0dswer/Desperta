@@ -63,9 +63,16 @@ import java.util.Random;
 public class MissionActivity extends Activity implements SensorEventListener {
   public static final String EXTRA_TYPE = "type";
   public static final String EXTRA_TARGET = "target";
+
+  /** All accepted values for a reusable QR/barcode mission. */
+  public static final String EXTRA_TARGETS = "targets";
+
   public static final String EXTRA_COUNT = "count";
   public static final String EXTRA_MODE = "mode";
   public static final String RESULT_TARGET = "mission_target";
+
+  /** Marks a result that was already delivered directly to the foreground alarm service. */
+  public static final String RESULT_SERVICE_REPORTED = "mission_service_reported";
 
   private static final int REQUEST_CAMERA_PERMISSION = 101;
   private static final int REQUEST_AUDIO_PERMISSION = 102;
@@ -102,7 +109,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private String type;
   private String target;
+  private final ArrayList<String> targets = new ArrayList<>();
   private String mode;
+  private int alarmId = -1;
+  private int missionIndex = -1;
   private int requiredCount;
   private int progress;
   private boolean finishing;
@@ -160,7 +170,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
                 launch.getStringExtra(EXTRA_TYPE), launch.getStringExtra("mission_type")));
     target =
         firstNonEmpty(launch.getStringExtra(EXTRA_TARGET), launch.getStringExtra("mission_target"));
+    readTargets(launch.getStringArrayListExtra(EXTRA_TARGETS));
+    if (targets.isEmpty() && target != null && !target.trim().isEmpty()) {
+      targets.add(target);
+    }
     mode = firstNonEmpty(launch.getStringExtra(EXTRA_MODE), "alarm").toLowerCase(Locale.ROOT);
+    alarmId = launch.getIntExtra("alarm_id", -1);
+    missionIndex = launch.getIntExtra("mission_index", -1);
     requiredCount = MissionLogic.safeCount(launch.getIntExtra(EXTRA_COUNT, 1));
     permissionMessages.put(
         REQUEST_CAMERA_PERMISSION, "A permissão da câmera é necessária para esta missão.");
@@ -189,6 +205,18 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private void restoreState(Bundle state) {
     restored = true;
+    String restoredTarget = state.getString(EXTRA_TARGET);
+    if (restoredTarget != null) target = restoredTarget;
+    ArrayList<String> restoredTargets = state.getStringArrayList(EXTRA_TARGETS);
+    if (restoredTargets != null) {
+      targets.clear();
+      readTargets(restoredTargets);
+    }
+    if (targets.isEmpty() && target != null && !target.trim().isEmpty()) {
+      targets.add(target);
+    }
+    alarmId = state.getInt("alarm_id", alarmId);
+    missionIndex = state.getInt("mission_index", missionIndex);
     progress = Math.max(0, state.getInt("progress", 0));
     mathA = state.getInt("mathA", 0);
     mathB = state.getInt("mathB", 0);
@@ -312,7 +340,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
             isRegisterMode()
                 ? "Fotografe um objeto. O primeiro objeto reconhecido será o alvo."
                 : "Fotografe o objeto registrado para que o classificador do aparelho o"
-                      + " verifique.");
+                    + " verifique.");
         addPrimaryButton("Abrir câmera", v -> requestCameraAndLaunch(CAMERA_OBJECT));
         setStatus("A verificação precisa de um objeto visível e bem iluminado.");
         imageLabeler =
@@ -536,12 +564,15 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private void launchBarcodeScanner() {
     if (finishing || scannerPending) return;
     IntentIntegrator integrator = new IntentIntegrator(this);
+    integrator.setCaptureActivity(AlarmCaptureActivity.class);
     integrator.setDesiredBarcodeFormats(IntentIntegrator.ALL_CODE_TYPES);
     integrator.setPrompt(
         isRegisterMode()
             ? "Escaneie o código de barras para registrá-lo"
             : "Escaneie o código de barras registrado");
     integrator.setBeepEnabled(true);
+    // Keep the embedded scanner's calibrated landscape camera surface. The custom activity adds
+    // lock-screen flags without changing the decode geometry used by the device camera pipeline.
     integrator.setOrientationLocked(false);
     scannerPending = true;
     try {
@@ -587,7 +618,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     }
     if (isRegisterMode()) {
       completeMission(contents);
-    } else if (MissionLogic.barcodeMatches(target, contents)) {
+    } else if (matchesAnyBarcode(contents)) {
       completeMission(null);
     } else {
       setStatus("Esse código de barras não corresponde ao código registrado.");
@@ -985,6 +1016,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
       result.putExtra(EXTRA_TARGET, registeredTarget);
       result.putExtra(RESULT_TARGET, registeredTarget);
     }
+    // Deliver accepted answers directly to the active service instead of relying solely
+    // on the nested Activity result chain. The expected cursor rejects stale callbacks;
+    // the result marker prevents RingActivity from reporting the same answer twice.
+    if (!isRegisterMode() && alarmId > 0) {
+      AlarmService.missionResult(this, alarmId, missionIndex, true);
+      result.putExtra(RESULT_SERVICE_REPORTED, true);
+    }
     setResult(RESULT_OK, result);
     finish();
   }
@@ -1110,6 +1148,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
   @Override
   protected void onSaveInstanceState(Bundle outState) {
     outState.putString("feedback", lastStatus);
+    outState.putString(EXTRA_TARGET, target);
+    outState.putStringArrayList(EXTRA_TARGETS, new ArrayList<>(targets));
+    outState.putInt("alarm_id", alarmId);
+    outState.putInt("mission_index", missionIndex);
     outState.putInt("progress", progress);
     outState.putInt("mathA", mathA);
     outState.putInt("mathB", mathB);
@@ -1178,6 +1220,24 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private static String firstNonEmpty(String value, String fallback) {
     return value == null || value.trim().isEmpty() ? fallback : value;
+  }
+
+  private void readTargets(ArrayList<String> incoming) {
+    if (incoming == null) return;
+    for (String value : incoming) {
+      if (value != null && !value.isEmpty() && !targets.contains(value)) targets.add(value);
+    }
+  }
+
+  private boolean matchesAnyBarcode(String contents) {
+    if (contents == null) return false;
+    if (!targets.isEmpty()) {
+      for (String accepted : targets) {
+        if (MissionLogic.barcodeMatches(accepted, contents)) return true;
+      }
+      return false;
+    }
+    return MissionLogic.barcodeMatches(target, contents);
   }
 
   private TextView label(String text, float size, int color) {

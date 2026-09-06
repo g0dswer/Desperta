@@ -17,6 +17,7 @@ public class MainActivity extends Activity {
   final int pink = Color.rgb(255, 49, 89), cyan = Color.rgb(32, 199, 223);
   LinearLayout page, body;
   Alarm draft;
+  int barcodeEditIndex = -1;
   String tab = "Alarmes", registerType = "";
   android.media.MediaPlayer sample;
   android.speech.tts.TextToSpeech speech;
@@ -44,7 +45,10 @@ public class MainActivity extends Activity {
         draft = Alarm.from(new JSONObject(b.getString("draft")));
       } catch (Exception ignored) {
       }
-    if (b != null) registerType = b.getString("registerType", "");
+    if (b != null) {
+      registerType = b.getString("registerType", "");
+      barcodeEditIndex = b.getInt("barcodeEditIndex", -1);
+    }
     render();
   }
 
@@ -65,6 +69,7 @@ public class MainActivity extends Activity {
     super.onSaveInstanceState(b);
     if (draft != null) b.putString("draft", draft.json().toString());
     b.putString("registerType", registerType);
+    b.putInt("barcodeEditIndex", barcodeEditIndex);
   }
 
   int d(int n) {
@@ -346,25 +351,29 @@ public class MainActivity extends Activity {
                       draft.label = s;
                       render();
                     })));
-    Button time =
-        button(
-            String.format(Locale.getDefault(), "%02d : %02d", draft.hour, draft.minute),
-            () ->
-                new TimePickerDialog(
-                        this,
-                        (v, h, m) -> {
-                          draft.hour = h;
-                          draft.minute = m;
-                          render();
-                        },
-                        draft.hour,
-                        draft.minute,
-                        true)
-                    .show());
-    time.setTextSize(38);
-    time.getLayoutParams().height = d(90);
-    body.addView(time);
-    note(remaining(Scheduler.next(draft, System.currentTimeMillis())));
+    LinearLayout wheels = new LinearLayout(this);
+    wheels.setGravity(Gravity.CENTER);
+    wheels.setBackground(shape(card, 20));
+    NumberPicker hours = timeWheel(23, draft.hour, "Horas");
+    NumberPicker minutes = timeWheel(59, draft.minute, "Minutos");
+    wheels.addView(hours, new LinearLayout.LayoutParams(d(110), d(180)));
+    TextView colon = text(":", 32, fg);
+    wheels.addView(colon);
+    wheels.addView(minutes, new LinearLayout.LayoutParams(d(110), d(180)));
+    body.addView(wheels);
+    TextView countdown =
+        text(remaining(Scheduler.next(draft, System.currentTimeMillis())), 14, muted);
+    body.addView(countdown);
+    hours.setOnValueChangedListener(
+        (v, old, value) -> {
+          draft.hour = value;
+          countdown.setText(remaining(Scheduler.next(draft, System.currentTimeMillis())));
+        });
+    minutes.setOnValueChangedListener(
+        (v, old, value) -> {
+          draft.minute = value;
+          countdown.setText(remaining(Scheduler.next(draft, System.currentTimeMillis())));
+        });
     LinearLayout daysBox = box();
     CheckBox daily = new CheckBox(this);
     daily.setText("Todos os dias");
@@ -402,16 +411,22 @@ public class MainActivity extends Activity {
       String name = names[Arrays.asList(types).indexOf(m.type)];
       ms.addView(
           button(
-              (i + 1) + ". " + name + "  ×",
+              (i + 1) + ". " + name + (m.type.equals("barcode") ? "  ›" : "  ×"),
               () -> {
+                if (m.type.equals("barcode")) {
+                  openBarcodeLibrary(index);
+                  return;
+                }
                 draft.missions.remove(index);
                 render();
               }));
       ms.addView(
           text(
-              m.type.equals("photo")
-                  ? "Foto de referência cadastrada"
-                  : m.target.isEmpty() ? m.count + " repetições" : m.target,
+              m.type.equals("barcode")
+                  ? String.join(" · ", m.acceptedCodes())
+                  : m.type.equals("photo")
+                      ? "Foto de referência cadastrada"
+                      : m.target.isEmpty() ? m.count + " repetições" : m.target,
               13,
               muted));
     }
@@ -616,6 +631,39 @@ public class MainActivity extends Activity {
     body.addView(s);
   }
 
+  NumberPicker timeWheel(int max, int value, String description) {
+    NumberPicker picker = new NumberPicker(this);
+    picker.setMinValue(0);
+    picker.setMaxValue(max);
+    picker.setFormatter(n -> String.format(Locale.getDefault(), "%02d", n));
+    picker.setValue(value);
+    picker.setWrapSelectorWheel(true);
+    picker.setDescendantFocusability(NumberPicker.FOCUS_BLOCK_DESCENDANTS);
+    picker.setContentDescription(description);
+    if (Build.VERSION.SDK_INT >= 29) {
+      picker.setTextColor(fg);
+      picker.setTextSize(d(30));
+    }
+    picker.setOnTouchListener(
+        (v, event) -> {
+          v.getParent()
+              .requestDisallowInterceptTouchEvent(
+                  event.getActionMasked() != MotionEvent.ACTION_UP
+                      && event.getActionMasked() != MotionEvent.ACTION_CANCEL);
+          return false;
+        });
+    return picker;
+  }
+
+  void openBarcodeLibrary(int index) {
+    barcodeEditIndex = index;
+    Intent intent = new Intent(this, BarcodeLibraryActivity.class);
+    if (index >= 0)
+      intent.putStringArrayListExtra("targets", draft.missions.get(index).acceptedCodes());
+    intent.putExtra("editing", index >= 0);
+    startActivityForResult(intent, 43);
+  }
+
   void chooseMission() {
     choice(
         "Escolha sua missão",
@@ -642,7 +690,9 @@ public class MainActivity extends Activity {
                 .show();
             return;
           }
-          if (type.equals("barcode") || type.equals("photo")) {
+          if (type.equals("barcode")) {
+            openBarcodeLibrary(-1);
+          } else if (type.equals("photo")) {
             registerType = type;
             startActivityForResult(
                 new Intent(this, MissionActivity.class)
@@ -748,6 +798,21 @@ public class MainActivity extends Activity {
       }
       if (req == 40) draft.sound = u.toString();
       else draft.wallpaper = u.toString();
+    }
+    if (req == 43) {
+      ArrayList<String> codes = data.getStringArrayListExtra("targets");
+      if (codes != null && !codes.isEmpty()) {
+        Alarm.Mission mission = new Alarm.Mission("barcode", codes.get(0), 1);
+        mission.targets.addAll(codes);
+        if (barcodeEditIndex >= 0 && barcodeEditIndex < draft.missions.size())
+          draft.missions.set(barcodeEditIndex, mission);
+        else if (draft.missions.size() < 5) draft.missions.add(mission);
+      } else if (data.getBooleanExtra("remove", false)
+          && barcodeEditIndex >= 0
+          && barcodeEditIndex < draft.missions.size()) {
+        draft.missions.remove(barcodeEditIndex);
+      }
+      barcodeEditIndex = -1;
     }
     if (req == 42) {
       String target = data.getStringExtra("target");

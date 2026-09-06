@@ -7,7 +7,7 @@ O escopo abaixo corresponde às cinco primeiras imagens e às três adicionais. 
 | Função identificada | Implementação | Evidência / limite |
 |---|---|---|
 | Lista de alarmes, horário e dias | MainActivity + Store | CRUD Android e persistência |
-| Criar e editar alarme | Editor nativo, seletor de horário, nome | Fluxo de interface |
+| Criar e editar alarme | Editor nativo, colunas de horas/minutos com rolagem circular, nome | Fluxo de interface; rolagem e persistência |
 | Nome/rótulo do alarme | Editor e tela de disparo | Salvar e reabrir |
 | Todos os dias / dias específicos / uma vez | Máscara semanal, horário local | SchedulerTest, incluindo mudança de dia e fuso |
 | Contagem até o próximo disparo | Próxima ocorrência calculada | SchedulerTest |
@@ -17,7 +17,11 @@ O escopo abaixo corresponde às cinco primeiras imagens e às três adicionais. 
 | Pular uma vez | skipUntil da próxima ocorrência | Teste de agenda e interface |
 | Duplicar | Cópia independente, novo identificador | Fluxo Android |
 | Até cinco missões | Sequência, remoção individual | Limite no editor e avanço controlado |
-| Cadastrar QR/código de barras | ZXing pela câmera, valor salvo localmente | Comparação exata; não aceita texto digitado na hora de encerrar |
+| Cadastrar QR/código de barras | ZXing pela câmera, biblioteca local reutilizável | Cadastro pelo driver de câmera do emulador |
+| Leitor vertical com enquadramento e lanterna | Preview integral com máscara externa, retângulo central e controle de flash | QR e EAN-13 via câmera; orientação e lanterna no emulador |
+| Adicionar vários códigos e selecionar os aceitos | Uma missão aceita qualquer código selecionado | Seleção múltipla e persistência |
+| Revisar e excluir código | Menu individual, valor completo e confirmação de exclusão | Exclusão da biblioteca não altera outros alarmes salvos |
+| Testar código antes de salvar | Testar leitura, sem iniciar alarme | Leitura pela câmera e confirmação visual |
 | Encerrar somente com código cadastrado | Leitura real e validação contra referência | Código incorreto e cancelamento não concluem missão |
 | Matemática | Perguntas e validação de resposta | Lógica e interface |
 | Digitação | Conferência exata da frase | Lógica e interface |

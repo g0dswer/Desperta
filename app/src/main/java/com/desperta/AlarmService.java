@@ -141,6 +141,15 @@ public class AlarmService extends Service {
   }
 
   public static void missionResult(Context context, int alarmId, boolean success) {
+    missionResult(context, alarmId, -1, success);
+  }
+
+  /**
+   * Delivers a mission result together with the cursor value observed by the mission screen. A
+   * delayed callback from an older screen must never advance a newer mission.
+   */
+  public static void missionResult(
+      Context context, int alarmId, int expectedMissionIndex, boolean success) {
     if (context == null || alarmId <= 0) {
       return;
     }
@@ -148,6 +157,7 @@ public class AlarmService extends Service {
         new Intent(context, AlarmService.class)
             .setAction(ACTION_MISSION_RESULT)
             .putExtra(Scheduler.EXTRA_ALARM_ID, alarmId)
+            .putExtra(EXTRA_MISSION_INDEX, expectedMissionIndex)
             .putExtra(EXTRA_MISSION_SUCCESS, success);
     startServiceCompat(context.getApplicationContext(), intent);
   }
@@ -166,7 +176,7 @@ public class AlarmService extends Service {
 
   private static void startServiceCompat(Context context, Intent intent) {
     try {
-      if (Build.VERSION.SDK_INT >= 26) {
+      if (Build.VERSION.SDK_INT >= 26 && ACTION_TRIGGER.equals(intent.getAction())) {
         context.startForegroundService(intent);
       } else {
         context.startService(intent);
@@ -197,6 +207,12 @@ public class AlarmService extends Service {
       return START_STICKY;
     }
     String action = intent.getAction();
+    // Control messages never create a new ringing session. A delayed camera result
+    // after completion must not leave an idle foreground-service start outstanding.
+    if (!ACTION_TRIGGER.equals(action) && activeAlarm == null) {
+      stopSelfResult(startId);
+      return START_NOT_STICKY;
+    }
     if (ACTION_DISMISS.equals(action)) {
       finishActive(intent.getIntExtra(Scheduler.EXTRA_ALARM_ID, activeId), "dismissed", false);
     } else if (ACTION_SNOOZE.equals(action)) {
@@ -206,7 +222,8 @@ public class AlarmService extends Service {
     } else if (ACTION_MISSION_RESULT.equals(action)) {
       handleMissionResult(
           intent.getIntExtra(Scheduler.EXTRA_ALARM_ID, activeId),
-          intent.getBooleanExtra(EXTRA_MISSION_SUCCESS, false));
+          intent.getBooleanExtra(EXTRA_MISSION_SUCCESS, false),
+          intent.getIntExtra(EXTRA_MISSION_INDEX, -1));
     } else if (ACTION_STOP.equals(action)) {
       finishActive(intent.getIntExtra(Scheduler.EXTRA_ALARM_ID, activeId), "stopped", true);
     } else {
@@ -299,13 +316,19 @@ public class AlarmService extends Service {
     activePreview = preview;
     activeSnooze = snooze;
     activeWakeCheck = wakeCheck;
+    PowerManager power = (PowerManager) getSystemService(POWER_SERVICE);
+    android.app.KeyguardManager keyguard = (android.app.KeyguardManager) getSystemService(KEYGUARD_SERVICE);
+    boolean useFullScreenNotification = (power != null && !power.isInteractive())
+        || (keyguard != null && keyguard.isKeyguardLocked());
     startForeground(NOTIFICATION_ID, buildNotification(alarm, preview));
     acquireWakeLock();
     configureAudioRoute();
     startPlayback(alarm);
     startVibration(alarm);
     speakReminders(alarm);
-    launchRingActivity(alarm, preview);
+    // On the lock screen Android launches the notification's full-screen intent.
+    // Launching it again here creates a second RingActivity over the active scanner.
+    if (!useFullScreenNotification) launchRingActivity(alarm, preview);
   }
 
   private void launchRingActivity(Alarm alarm, boolean preview) {
@@ -326,8 +349,13 @@ public class AlarmService extends Service {
     }
   }
 
-  private void handleMissionResult(int alarmId, boolean success) {
+  private void handleMissionResult(int alarmId, boolean success, int expectedMissionIndex) {
     if (alarmId != activeId || activeAlarm == null || activePreview) {
+      return;
+    }
+    if (expectedMissionIndex >= 0 && expectedMissionIndex != missionIndex) {
+      // The Activity may have been recreated or delivered the same scanner callback twice after
+      // the cursor moved. Keep the active session at its current mission.
       return;
     }
     if (success) {
@@ -898,6 +926,7 @@ public class AlarmService extends Service {
         .setPriority(Notification.PRIORITY_MAX)
         .setOngoing(true)
         .setAutoCancel(false)
+        .setContentIntent(fullScreenIntent)
         .setFullScreenIntent(fullScreenIntent, true)
         .build();
   }

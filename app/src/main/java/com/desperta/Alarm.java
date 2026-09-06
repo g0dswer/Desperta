@@ -27,6 +27,13 @@ public class Alarm {
   public static class Mission {
     public String type, target;
     public int count;
+    public List<String> targets = new ArrayList<>();
+
+    public ArrayList<String> acceptedCodes() {
+      ArrayList<String> codes = new ArrayList<>(targets);
+      if (codes.isEmpty() && target != null && !target.isEmpty()) codes.add(target);
+      return codes;
+    }
 
     public Mission(String t, String v, int n) {
       type = t;
@@ -35,7 +42,11 @@ public class Alarm {
     }
 
     public JSONObject json() throws JSONException {
-      return new JSONObject().put("type", type).put("target", target).put("count", count);
+      return new JSONObject()
+          .put("type", type)
+          .put("target", target)
+          .put("count", count)
+          .put("targets", new JSONArray(targets));
     }
   }
 
@@ -68,8 +79,15 @@ public class Alarm {
       if (ms != null)
         for (int i = 0; i < ms.length(); i++) {
           JSONObject m = ms.getJSONObject(i);
-          a.missions.add(
-              new Mission(m.getString("type"), m.optString("target"), m.optInt("count", 1)));
+          Mission mission =
+              new Mission(m.getString("type"), m.optString("target"), m.optInt("count", 1));
+          JSONArray codes = m.optJSONArray("targets");
+          if (codes != null)
+            for (int j = 0; j < codes.length(); j++) {
+              String code = codes.optString(j);
+              if (!code.isEmpty() && !mission.targets.contains(code)) mission.targets.add(code);
+            }
+          a.missions.add(mission);
         }
     } catch (Exception e) {
       throw new IllegalArgumentException(e);

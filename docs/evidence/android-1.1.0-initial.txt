@@ -1,0 +1,30 @@
+
+com.desperta.AppFlowTest:......
+com.desperta.BarcodeLibraryFlowTest:.....
+com.desperta.CameraPipelineTest:.
+Error in actualBarcodeMissionStopsRealAlarmOnlyAfterCameraScan(com.desperta.CameraPipelineTest):
+java.lang.NullPointerException: Current state was null unexpectedly. Last stage = RESTARTED
+	at androidx.test.internal.util.Checks.checkNotNull(Checks.java:50)
+	at androidx.test.core.app.ActivityScenario.moveToState(ActivityScenario.java:657)
+	at androidx.test.core.app.ActivityScenario.close(ActivityScenario.java:421)
+	at com.desperta.CameraPipelineTest.actualBarcodeMissionStopsRealAlarmOnlyAfterCameraScan(CameraPipelineTest.java:147)
+..
+com.desperta.EngineFlowTest:............
+com.desperta.MainActivityWheelFlowTest:..
+com.desperta.MissionUiTest:...
+com.desperta.ScannerAppearanceTest:.
+com.desperta.SettingsWeatherTest:...
+
+Time: 199.493
+There was 1 failure:
+1) actualBarcodeMissionStopsRealAlarmOnlyAfterCameraScan(com.desperta.CameraPipelineTest)
+java.lang.NullPointerException: Current state was null unexpectedly. Last stage = RESTARTED
+	at androidx.test.internal.util.Checks.checkNotNull(Checks.java:50)
+	at androidx.test.core.app.ActivityScenario.moveToState(ActivityScenario.java:657)
+	at androidx.test.core.app.ActivityScenario.close(ActivityScenario.java:421)
+	at com.desperta.CameraPipelineTest.actualBarcodeMissionStopsRealAlarmOnlyAfterCameraScan(CameraPipelineTest.java:147)
+
+FAILURES!!!
+Tests run: 36,  Failures: 1
+
+

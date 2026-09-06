@@ -41,6 +41,7 @@ public class RingActivity extends Activity {
   private int alarmId = -1;
   private boolean preview;
   private Alarm alarm;
+  private int openMissionIndex = -1;
   private TextView status;
   private TextView missionStatus;
   private boolean missionOpen;
@@ -52,6 +53,10 @@ public class RingActivity extends Activity {
     super.onCreate(state);
     configureWindow();
     readIntent(getIntent());
+    if (state != null) {
+      missionOpen = state.getBoolean("missionOpen", false);
+      openMissionIndex = state.getInt("openMissionIndex", -1);
+    }
     alarm = Store.get(this, alarmId);
     if (alarm == null) {
       finish();
@@ -62,6 +67,13 @@ public class RingActivity extends Activity {
     if (!preview) {
       handler.post(this::startMissionIfNeeded);
     }
+  }
+
+  @Override
+  protected void onSaveInstanceState(Bundle outState) {
+    outState.putBoolean("missionOpen", missionOpen);
+    outState.putInt("openMissionIndex", openMissionIndex);
+    super.onSaveInstanceState(outState);
   }
 
   @Override
@@ -283,12 +295,14 @@ public class RingActivity extends Activity {
     }
     Alarm.Mission mission = alarm.missions.get(index);
     missionOpen = true;
+    openMissionIndex = index;
     updateMissionStatus(index);
     Intent intent =
         new Intent()
             .setClassName(this, getPackageName() + ".MissionActivity")
             .putExtra("type", mission.type)
             .putExtra("target", mission.target)
+            .putStringArrayListExtra(MissionActivity.EXTRA_TARGETS, mission.acceptedCodes())
             .putExtra("count", mission.count)
             .putExtra("alarm_id", alarmId)
             .putExtra("mission_index", index)
@@ -298,6 +312,7 @@ public class RingActivity extends Activity {
       startActivityForResult(intent, REQUEST_MISSION);
     } catch (RuntimeException missingMissionScreen) {
       missionOpen = false;
+      openMissionIndex = -1;
       setStatus("Tela da missão indisponível", PINK);
     }
   }
@@ -314,8 +329,15 @@ public class RingActivity extends Activity {
     super.onActivityResult(requestCode, resultCode, data);
     if (requestCode != REQUEST_MISSION) return;
     missionOpen = false;
+    int completedMissionIndex = openMissionIndex;
+    openMissionIndex = -1;
     if (resultCode == RESULT_OK) {
-      AlarmService.missionResult(this, alarmId, true);
+      // MissionActivity reports successful alarm-mode missions directly to the foreground
+      // service as soon as the scanner/mission accepts them. Older or standalone mission
+      // screens still return the result here, so retain this as the compatibility fallback.
+      boolean serviceReported =
+          data != null && data.getBooleanExtra(MissionActivity.RESULT_SERVICE_REPORTED, false);
+      if (!serviceReported) AlarmService.missionResult(this, alarmId, completedMissionIndex, true);
     } else {
       // Cancellation and a wrong answer leave the ringing service alive.
       setStatus("Missão não concluída. Tente novamente.", PINK);
@@ -401,7 +423,8 @@ public class RingActivity extends Activity {
         if (bitmap != null) {
           BitmapDrawable image = new BitmapDrawable(getResources(), bitmap);
           image.setGravity(android.view.Gravity.FILL);
-          return new android.graphics.drawable.LayerDrawable(new Drawable[] {image, new android.graphics.drawable.ColorDrawable(0xB809090B)});
+          return new android.graphics.drawable.LayerDrawable(
+              new Drawable[] {image, new android.graphics.drawable.ColorDrawable(0xB809090B)});
         }
       } catch (RuntimeException | java.io.IOException ignored) {
         // Fall back to the dark built-in wallpaper if access expired.

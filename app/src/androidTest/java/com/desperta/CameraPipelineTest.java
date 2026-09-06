@@ -19,6 +19,10 @@ public class CameraPipelineTest {
   Context c;
   UiDevice ui;
 
+  private String fixtureValue() {
+    return InstrumentationRegistry.getArguments().getString("barcodeFixtureValue", "DESPERTA-ACORDAR-2026");
+  }
+
   @Before
   public void before() throws Exception {
     c = InstrumentationRegistry.getInstrumentation().getTargetContext();
@@ -54,6 +58,27 @@ public class CameraPipelineTest {
   }
 
   @Test
+  public void scheduledCameraMissionWakesScreenAndStopsAlarm() throws Exception {
+    Alarm alarm = new Alarm();
+    alarm.id = 65002;
+    alarm.days = 0;
+    alarm.missions.add(new Alarm.Mission("barcode", fixtureValue(), 1));
+    Store.save(c, alarm);
+    try (ActivityScenario<MainActivity> launcher = ActivityScenario.launch(MainActivity.class)) {
+      Scheduler.scheduleAt(c, alarm.id, System.currentTimeMillis() + 2500, false, false);
+      ui.sleep();
+      assertFalse(ui.isScreenOn());
+      long deadline = SystemClock.elapsedRealtime() + 30000;
+      while ((Store.history(c).length() == 0 || Store.getSession(c) != null)
+          && SystemClock.elapsedRealtime() < deadline) SystemClock.sleep(100);
+      assertTrue("Alarm must wake display for the camera", ui.isScreenOn());
+      assertEquals("Scan must stop the scheduled alarm", 1, Store.history(c).length());
+      assertEquals(null, Store.getSession(c));
+      assertFalse(Store.get(c, alarm.id).enabled);
+    } finally { ui.wakeUp(); ui.pressHome(); }
+  }
+
+  @Test
   public void registerFromCameraAndMatchRegisteredCode() throws Exception {
     String registered;
     try (ActivityScenario<MissionActivity> s =
@@ -64,13 +89,20 @@ public class CameraPipelineTest {
       waitFinished(s);
       assertEquals(Activity.RESULT_OK, s.getResult().getResultCode());
       registered = s.getResult().getResultData().getStringExtra("target");
-      assertEquals("DESPERTA-ACORDAR-2026", registered);
+      assertEquals(fixtureValue(), registered);
     }
     try (ActivityScenario<MissionActivity> s =
         ActivityScenario.launchActivityForResult(
             new Intent(c, MissionActivity.class)
                 .putExtra("type", "barcode")
-                .putExtra("target", registered))) {
+                .putExtra("target", registered)
+                // A reusable mission may accept any selected code. Keep a non-matching
+                // entry first so this catches regressions where RingActivity forwards only
+                // the legacy single target instead of the complete target list.
+                .putStringArrayListExtra(
+                    MissionActivity.EXTRA_TARGETS,
+                    new java.util.ArrayList<>(
+                        java.util.Arrays.asList("DIFFERENT-CODE", registered))))) {
       waitFinished(s);
       assertEquals(Activity.RESULT_OK, s.getResult().getResultCode());
     }
@@ -97,19 +129,30 @@ public class CameraPipelineTest {
     a.id = 65001;
     a.days = 0;
     a.snoozeLimit = 0;
-    a.missions.add(new Alarm.Mission("barcode", "DESPERTA-ACORDAR-2026", 1));
+    Alarm.Mission barcode = new Alarm.Mission("barcode", "DIFFERENT-CODE", 1);
+    barcode.targets.add("DIFFERENT-CODE");
+    barcode.targets.add(fixtureValue());
+    a.missions.add(barcode);
     Store.save(c, a);
     try (ActivityScenario<MainActivity> launcher = ActivityScenario.launch(MainActivity.class)) {
       launcher.onActivity(x -> AlarmService.start(x, a.id, false));
-      SystemClock.sleep(400);
-      try (ActivityScenario<RingActivity> ring =
-          ActivityScenario.launch(new Intent(c, RingActivity.class).putExtra("alarm_id", a.id))) {
-        long end = SystemClock.elapsedRealtime() + 25000;
-        while (Store.history(c).length() == 0 && SystemClock.elapsedRealtime() < end)
-          SystemClock.sleep(200);
-        assertTrue("Camera completion must reach alarm service", Store.history(c).length() > 0);
-        assertFalse(Store.get(c, a.id).enabled);
+      long end = SystemClock.elapsedRealtime() + 25000;
+      while ((Store.history(c).length() == 0 || Store.getSession(c) != null)
+          && SystemClock.elapsedRealtime() < end) SystemClock.sleep(100);
+      assertTrue("Camera completion must reach alarm service", Store.history(c).length() > 0);
+      assertEquals(null, Store.getSession(c));
+      assertFalse(Store.get(c, a.id).enabled);
+      // The service opens RingActivity itself. Creating another one here creates a
+      // second result chain that users do not start, and races ActivityScenario.close().
+      ui.waitForIdle();
+      boolean resumed = false;
+      end = SystemClock.elapsedRealtime() + 5000;
+      while (!resumed && SystemClock.elapsedRealtime() < end) {
+        try { resumed = launcher.getState() == Lifecycle.State.RESUMED; }
+        catch (NullPointerException transitioning) { }
+        if (!resumed) SystemClock.sleep(100);
       }
+      assertTrue("Main screen must return after completing the alarm", resumed);
     }
   }
 }
