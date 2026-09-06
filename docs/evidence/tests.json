@@ -1,0 +1,253 @@
+{
+  "environment": "Pixel 7 emulator, Android 15 API 35, arm64-v8a; Java 17; Gradle Wrapper 8.11.1",
+  "unit": [
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "zeroMaskIsAOneShotClockOccurrence",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "springDstGapNormalizesToTheFirstValidLocalTime",
+      "seconds": "0.001",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "skipUntilSuppressesExactlyOneMatchingOccurrence",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "dailyAlarmUsesTheNextFutureClockOccurrence",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "fallDstOccurrenceIsStrictlyAfterTheInput",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "sundayBitZeroSelectsSundayAndSkipsOtherDays",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "photoSignatureNeedsDetailAndMatchesSimilarHashes",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "typingMathSpeechAndLabelsAreVerified",
+      "seconds": "0.003",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "colorAndShakeChecksRejectWrongInputAndDebounce",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "squatRequiresDownThenUp",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "barcodeRequiresExactPayload",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "progressIsBoundedAndRequiresAllRepetitions",
+      "seconds": "0.0",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "code128CameraPixelDecoderPreservesLeadingZeros",
+      "seconds": "0.019",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "qrCameraPixelDecoderPreservesExactPayload",
+      "seconds": "0.021",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "ean13CameraPixelDecoderPreservesProductCode",
+      "seconds": "0.003",
+      "status": "passed"
+    }
+  ],
+  "android": [
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "createEditPersistDuplicateSkipDelete",
+      "seconds": "11.625",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "tabsExcludedAndSettingsOpen",
+      "seconds": "1.639",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "allAlarmSwitchesSnoozeWallpaperAndMissionLimitPersist",
+      "seconds": "48.39",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "discardDoesNotCreateAlarm",
+      "seconds": "2.973",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "editorMissionAndOptionsPersist",
+      "seconds": "11.575",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.AppFlowTest",
+      "name": "enableSwitchPersistsBothDirections",
+      "seconds": "3.944",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.CameraPipelineTest",
+      "name": "actualBarcodeMissionStopsRealAlarmOnlyAfterCameraScan",
+      "seconds": "3.412",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.CameraPipelineTest",
+      "name": "registerFromCameraAndMatchRegisteredCode",
+      "seconds": "3.543",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.CameraPipelineTest",
+      "name": "wrongCameraCodeDoesNotCompleteMission",
+      "seconds": "2.182",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "overlappingScheduledDeliveriesAreQueuedAndThenDrained",
+      "seconds": "6.195",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "previewServiceDoesNotWriteHistoryOrDisableAlarm",
+      "seconds": "0.768",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "wakeCheckPendingIntentIsDeliveredAsASeparateRealTrigger",
+      "seconds": "5.722",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "snoozedSessionsRemainKeyedWhenActiveSessionChanges",
+      "seconds": "0.093",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "scheduledDeliveryStartsARealForegroundSessionAndDismissLogsIt",
+      "seconds": "5.197",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "snoozeLimitGuardPreventsClosingTheRingUi",
+      "seconds": "0.036",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "previewUsesAlarmAttributesAndRestoresExtraLoudVolumeAndRoute",
+      "seconds": "1.467",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "alarmPendingIntentsKeepNormalSnoozeWakeAndPreviewSeparate",
+      "seconds": "0.077",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "exactScheduleCanBeInstalledAndCancelledWhenPermissionIsAvailable",
+      "seconds": "0.046",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "wrongMissionResultLeavesCursorAndRingActive",
+      "seconds": "5.765",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.EngineFlowTest",
+      "name": "snoozePersistsCountAndMissionCursor",
+      "seconds": "0.653",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionUiTest",
+      "name": "colorMissionRequiresRequestedTile",
+      "seconds": "1.813",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionUiTest",
+      "name": "mathRejectsWrongThenAcceptsCorrect",
+      "seconds": "3.407",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.MissionUiTest",
+      "name": "typingRejectsWrongInputAndCompletesExactText",
+      "seconds": "4.077",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SettingsWeatherTest",
+      "name": "settingsPersistThemeAndOutputChoices",
+      "seconds": "1.512",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SettingsWeatherTest",
+      "name": "weatherRefreshUsesRealGeocodingAndForecast",
+      "seconds": "3.669",
+      "status": "passed"
+    },
+    {
+      "class": "com.desperta.SettingsWeatherTest",
+      "name": "weatherRefreshReportsInvalidCityAndClearsTimestamp",
+      "seconds": "0.53",
+      "status": "passed"
+    }
+  ]
+}

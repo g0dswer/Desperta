@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Intentionally empty policy set. Desperta uses the Android consent and
+  lifecycle callbacks only; it does not request force-lock, wipe, or any other
+  policy that could surprise the user.
+-->
+<device-admin xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-policies />
+</device-admin>
