@@ -70,7 +70,7 @@ Note: Recompile with -Xlint:deprecation for details.
 > Task :app:lintAnalyzeDebug
 > Task :app:lintReportDebug UP-TO-DATE
 > Task :app:lintDebug
-[Incubating] Problems report is available at: file:///Users/thiagogruber/Documents/ChatGPT/app%20alarme/build/reports/problems/problems-report.html
+[Incubating] Problems report is available at: file://<workspace>/build/reports/problems/problems-report.html
 
 BUILD SUCCESSFUL in 2s
 56 actionable tasks: 15 executed, 41 up-to-date

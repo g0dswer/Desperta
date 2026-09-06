@@ -13,6 +13,8 @@ Atualização gratuita, sem anúncios e sem login. Instale o APK sobre a versão
 
 ## Validação
 
+**18 testes locais e 36 testes Android passaram**, além de quatro testes de câmera com EAN-13 e um teste de alarme com PIN no emulador.
+
 Os resultados e os cenários executados estão no [relatório da versão 1.1.0](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.1.0.md). A validação usa Android 15 em emulador e câmera alimentada com uma imagem de QR, passando pelo driver de câmera e pelo ZXing.
 
 O aparelho Samsung do relato não esteve disponível para reproduzir sua falha específica. Sensores físicos, voz, vibração, Bluetooth e reconhecimento visual em cenas reais continuam com a cobertura limitada descrita na [matriz de funcionalidades](https://github.com/g0dswer/Desperta/blob/main/docs/FUNCIONALIDADES.md). Mantida a classificação de pré-release.

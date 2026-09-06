@@ -1,0 +1,114 @@
+{
+  "version": "1.1.0",
+  "apk_sha256": "da1d56d909d15485184029d95caf15994bafdf478c3cc41f88282c4fcb5fde93",
+  "unit_tests": [
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "zeroMaskIsAOneShotClockOccurrence",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "springDstGapNormalizesToTheFirstValidLocalTime",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "skipUntilSuppressesExactlyOneMatchingOccurrence",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "dailyAlarmUsesTheNextFutureClockOccurrence",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "fallDstOccurrenceIsStrictlyAfterTheInput",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.SchedulerTest",
+      "name": "sundayBitZeroSelectsSundayAndSkipsOtherDays",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.AlarmTargetsTest",
+      "name": "copyingAnAlarmDeepCopiesTargetsAndResetsSkipState",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.AlarmTargetsTest",
+      "name": "legacyBarcodeMissionUsesItsOriginalTargetAndRoundTripsWithoutTargetsField",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.AlarmTargetsTest",
+      "name": "multipleTargetsAreSerializedInOrderAndDuplicateEntriesAreIgnoredOnRead",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "photoSignatureNeedsDetailAndMatchesSimilarHashes",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "typingMathSpeechAndLabelsAreVerified",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "colorAndShakeChecksRejectWrongInputAndDebounce",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "squatRequiresDownThenUp",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "barcodeRequiresExactPayload",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.MissionLogicTest",
+      "name": "progressIsBoundedAndRequiresAllRepetitions",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "code128CameraPixelDecoderPreservesLeadingZeros",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "qrCameraPixelDecoderPreservesExactPayload",
+      "passed": true
+    },
+    {
+      "class": "com.desperta.BarcodeDecodeTest",
+      "name": "ean13CameraPixelDecoderPreservesProductCode",
+      "passed": true
+    }
+  ],
+  "android": {
+    "tests": 36,
+    "failures": 0,
+    "ignored": 0,
+    "seconds": 196.884,
+    "evidence": "android-1.1.0-final.txt"
+  },
+  "ean13_camera": {
+    "tests": 4,
+    "failures": 0,
+    "evidence": "ean13-camera-1.1.0.txt"
+  },
+  "pin_camera": {
+    "tests": 1,
+    "failures": 0,
+    "evidence": "pin-camera-1.1.0.txt"
+  },
+  "environment": "Android 15 API35 ARM64 emulator; signed release APK; physical Samsung not tested"
+}

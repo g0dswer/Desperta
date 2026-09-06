@@ -5,8 +5,7 @@ Ambiente: Android 15 / API 35, emulador Pixel 7 ARM64. APK de release assinado c
 ## Resultado
 
 - 18 testes locais aprovados, sem falhas.
-- 12 testes de regressão das mudanças aprovados no APK assinado.
-- 36 casos Android com aprovação final entre a execução integral e a repetição dos testes de câmera. A integral teve 35 aprovações e uma falha de fechamento de ActivityScenario; após corrigir o teste, os quatro casos de câmera passaram novamente.
+- 36 testes Android aprovados em uma execução integral final, sem falhas nem ignorados, no APK assinado (196,884 segundos).
 - 4 testes de câmera com EAN-13 aprovados.
 - Alarme agendado com PIN no emulador: aprovado no leitor vertical.
 - `lintDebug`, build de release e assinatura v2/v3 aprovados.
@@ -52,3 +51,5 @@ O QR padrão é criado com `python scripts/camera-fixture.py`. Inicie o emulador
 Para EAN-13, `scripts/BarcodeCameraFixture.java` gera a imagem de teste usando o ZXing Core 3.4.1 (disponível nas dependências Gradle). Execute com Java 17 e o JAR no classpath, indicando um PNG de saída; copie-o para o caminho da câmera antes do teste. Rode `CameraPipelineTest` com o argumento de instrumentação `barcodeFixtureValue=7891035002427`. O valor esperado não é injetado no leitor; ele serve para comparar o resultado decodificado da imagem.
 
 As evidências de execução ficam em `docs/evidence/`. A iluminação da lanterna e a câmera físicas não foram avaliadas.
+
+Execução integral final: [log dos 36 testes](evidence/android-1.1.0-final.txt). O CI do código também [passou no GitHub](https://github.com/g0dswer/Desperta/actions/runs/34058243752).
