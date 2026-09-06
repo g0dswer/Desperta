@@ -401,7 +401,7 @@ public class RingActivity extends Activity {
         if (bitmap != null) {
           BitmapDrawable image = new BitmapDrawable(getResources(), bitmap);
           image.setGravity(android.view.Gravity.FILL);
-          return image;
+          return new android.graphics.drawable.LayerDrawable(new Drawable[] {image, new android.graphics.drawable.ColorDrawable(0xB809090B)});
         }
       } catch (RuntimeException | java.io.IOException ignored) {
         // Fall back to the dark built-in wallpaper if access expired.

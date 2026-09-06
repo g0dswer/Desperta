@@ -33,4 +33,6 @@ Veja [funcionalidades e evidências](docs/FUNCIONALIDADES.md) e [privacidade](do
 
 ## Capturas
 
-Capturas reais do app no emulador, sem mockups: [tela de alarmes](docs/screenshots/01-alarmes.png).
+Capturas reais do app no emulador: [Alarmes](docs/screenshots/01-alarmes.png) · [Editor](docs/screenshots/02-editor.png) · [Som](docs/screenshots/03-som.png) · [Prévia](docs/screenshots/04-alarme.png) · [Ajustes](docs/screenshots/05-ajustes.png).
+
+<img src="docs/screenshots/01-alarmes.png" width="220" alt="Lista de alarmes"> <img src="docs/screenshots/02-editor.png" width="220" alt="Editor com código QR cadastrado">

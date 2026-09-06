@@ -892,7 +892,7 @@ public class AlarmService extends Service {
             : new Notification.Builder(this);
     return builder
         .setSmallIcon(android.R.drawable.ic_lock_idle_alarm)
-        .setContentTitle(preview ? "Preview alarm" : "Wake-up alarm")
+        .setContentTitle(preview ? "Prévia do alarme" : "Hora de despertar")
         .setContentText(TextUtils.isEmpty(alarm.label) ? "Desperta" : alarm.label)
         .setCategory(Notification.CATEGORY_ALARM)
         .setPriority(Notification.PRIORITY_MAX)

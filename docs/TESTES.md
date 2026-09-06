@@ -67,7 +67,6 @@ O AVD usado é Pixel 7, imagem `system-images;android-35;google_apis;arm64-v8a`.
 
 - **Não validados em aparelho físico:** foco/iluminação da câmera; caminhada, agitação e agachamentos; reconhecimento de objetos/fotos em cenários reais; microfone/ritmo e voz audível; vibração, Bluetooth e volume percebido.
 - Foto usa comparação visual aproximada. Agachamento usa capturas sucessivas de corpo inteiro, verificando flexão e extensão; não equivale a acompanhamento contínuo por vídeo.
-- Seletor de áudio/imagem personalizada têm implementação, mas o percurso completo com documentos reais ainda requer teste manual.
 - O disparo agendado, soneca, fila, confirmação de despertar, atributos de áudio, restauração de volume, persistência e missões descritas nos casos acima foram exercitados pelo Android do emulador. Isso não prova o comportamento de economia de bateria de cada fabricante.
 
 Consulte a [matriz completa das funções](FUNCIONALIDADES.md) para separar implementação de cobertura de teste.
@@ -75,3 +74,9 @@ Consulte a [matriz completa das funções](FUNCIONALIDADES.md) para separar impl
 ## Verificação manual do administrador
 
 No emulador, abri Ativar proteção, aceitei a tela de administrador do Android, confirmei `com.desperta/.ProtectionAdmin` em `dumpsys device_policy`, usei Remover e confirmei que o administrador desapareceu. O recurso é opcional e reversível.
+
+## Arquivos personalizados e inspeção visual
+
+Selecionei um WAV de cinco segundos pelo seletor nativo de Downloads, acionei Ouvir som e observei os eventos `started`, `stopped` e liberação do MediaPlayer. Após atualizar o APK, a prévia voltou a reproduzir o arquivo: `USAGE_ALARM`, `CONTENT_TYPE_SONIFICATION`, mono, 16000 Hz, estado `started`. A percepção audível continua não validada, pois o emulador roda sem saída física de áudio.
+
+Selecionei um PNG pelo seletor nativo, salvei e confirmei sua exibição após atualizar o APK. Corrigi o contraste sobre imagens claras. Também corrigi as margens de Ajustes para não sobrepor as barras do Android. As capturas em `screenshots/` foram obtidas do aplicativo em execução, sem mockups.

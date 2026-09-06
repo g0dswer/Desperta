@@ -29,8 +29,8 @@ O escopo abaixo corresponde às cinco primeiras imagens e às três adicionais. 
 | Encontrar objeto doméstico | Reconhecimento local de copo, livro, garrafa, cadeira ou planta com ML Kit | Implementado; reconhecimento do objeto ainda não validado com cena real |
 | Falar no ritmo | Reconhecimento de voz + janela temporal | Normalização da palavra testada; ritmo e microfone ainda pendentes |
 | Confirmação de despertar | Novo chamado após intervalo | Disparo da confirmação e regressão contra repetição infinita testados |
-| Escolher áudio personalizado | Seletor de documento com acesso persistente | Implementado; seleção de arquivo real pelo Android ainda não testada |
-| Ouvir áudio antes de salvar | Prévia com duração limitada | Implementado; botão de amostra ainda requer checagem manual |
+| Escolher áudio personalizado | Seletor de documento com acesso persistente | WAV selecionado pelo seletor Android; acesso persistiu após atualizar o APK; reprodução verificada |
+| Ouvir áudio antes de salvar | Prévia com duração limitada | Botão de amostra acionado; MediaPlayer iniciou e encerrou o WAV de 5 segundos |
 | Volume | Volume por alarme | Configuração e serviço; percepção sonora física pendente |
 | Vibração | Vibrator | Configuração testada; vibração física pendente |
 | Despertar gradual | Rampa de volume | Serviço e configuração |
@@ -40,7 +40,7 @@ O escopo abaixo corresponde às cinco primeiras imagens e às três adicionais. 
 | Amostras de voz | Botão de exemplo de hora/clima/nome | Implementado; teste audível de TTS pendente |
 | Efeito extra alto | Volume máximo do fluxo de alarme | Limitado ao volume físico do aparelho, sem promessa de amplificação além do hardware |
 | Soneca: intervalo e quantidade | Limite por sessão | Estado e agenda Android |
-| Papel de parede | Aurora/Oceano/Noite ou documento escolhido | Escolha Oceano testada; seletor de imagem própria ainda não testado |
+| Papel de parede | Aurora/Oceano/Noite ou documento escolhido | Oceano testado; PNG selecionado, persistido e exibido na prévia com contraste verificado |
 | Salvar / cancelar | Persistência ou descarte explícito | Fluxo Android |
 | Otimização de alarme | Status e atalhos de permissões exatas, notificações, tela cheia e bateria | Permissões controladas pelo Android |
 | Ajustes avançados / prevenção de fuga | Sessão ativa, missões e informações de proteção | Forçar parada e revogação de permissão continuam possíveis |
