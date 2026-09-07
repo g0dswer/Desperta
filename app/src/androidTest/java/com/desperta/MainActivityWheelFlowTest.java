@@ -30,7 +30,7 @@ public class MainActivityWheelFlowTest {
     ui = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     for (Alarm alarm : Store.all(context)) Scheduler.cancel(context, alarm.id);
     context.stopService(new android.content.Intent(context, AlarmService.class));
-    Store.prefs(context).edit().clear().commit();
+    Store.prefs(context).edit().clear().putBoolean(UpdateChecker.KEY_AUTO_CHECK, false).commit();
     scenario = ActivityScenario.launch(MainActivity.class);
     ui.waitForIdle();
   }
@@ -40,12 +40,12 @@ public class MainActivityWheelFlowTest {
     if (scenario != null) scenario.close();
     context.stopService(new android.content.Intent(context, AlarmService.class));
     for (Alarm alarm : Store.all(context)) Scheduler.cancel(context, alarm.id);
-    Store.prefs(context).edit().clear().commit();
+    Store.prefs(context).edit().clear().putBoolean(UpdateChecker.KEY_AUTO_CHECK, false).commit();
   }
 
   @Test
   public void scrollingBothWheelsChangesTheDraftAndSurvivesSaveAndReopen() throws Exception {
-    click("＋  Novo alarme");
+    click("+ Alarme");
     UiSelector pickerSelector = new UiSelector().className("android.widget.NumberPicker");
     UiObject hours = ui.findObject(pickerSelector.instance(0));
     UiObject minutes = ui.findObject(pickerSelector.instance(1));
@@ -71,8 +71,8 @@ public class MainActivityWheelFlowTest {
     scenario.close();
     scenario = ActivityScenario.launch(MainActivity.class);
     ui.waitForIdle();
-    click("Editar  ·  Mais opções");
-    click("Editar");
+    ui.findObject(new UiSelector().descriptionStartsWith("Editar alarme Bom dia")).click();
+    ui.waitForIdle();
     int[] reopened = draftTime();
     assertEquals(afterMinute[0], reopened[0]);
     assertEquals(afterMinute[1], reopened[1]);
@@ -86,9 +86,11 @@ public class MainActivityWheelFlowTest {
         .putBoolean("barcode_library_migrated", true)
         .commit();
 
-    click("＋  Novo alarme");
-    click("＋  Adicionar missão");
+    click("+ Alarme");
+    ui.findObject(new UiSelector().descriptionStartsWith("Como desligar,")).click();
+    click("+ Adicionar missão");
     click("QR / Código de barras");
+    click("Configurar");
     click("7891035002427");
     click("DESPERTA-ACORDAR-2026");
     click("Concluir");
@@ -98,9 +100,11 @@ public class MainActivityWheelFlowTest {
     scenario.close();
     scenario = ActivityScenario.launch(MainActivity.class);
     ui.waitForIdle();
-    click("Editar  ·  Mais opções");
-    click("Editar");
+    ui.findObject(new UiSelector().descriptionStartsWith("Editar alarme Bom dia")).click();
+    ui.waitForIdle();
+    ui.findObject(new UiSelector().descriptionStartsWith("Como desligar,")).click();
     click("1. QR / Código de barras  ›");
+    click("Configurar");
     assertTrue(ui.findObject(new UiSelector().text("7891035002427")).isChecked());
     assertTrue(ui.findObject(new UiSelector().text("DESPERTA-ACORDAR-2026")).isChecked());
   }
@@ -127,7 +131,8 @@ public class MainActivityWheelFlowTest {
   }
 
   private void click(String text) throws Exception {
-    UiObject object = ui.findObject(new UiSelector().text(text));
+    UiObject object =
+        ui.findObject(new UiSelector().textMatches("(?iu)" + java.util.regex.Pattern.quote(text)));
     assertTrue("Missing UI text: " + text, object.waitForExists(5000));
     object.click();
     ui.waitForIdle();

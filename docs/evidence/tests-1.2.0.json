@@ -1,0 +1,87 @@
+{
+  "version": "1.2.0",
+  "versionCode": 3,
+  "sha256": "f18fc06d5b4d72862ec95034ad5ab450585c69262a90651cf02ca4f6b72dc3ff",
+  "size": 132416822,
+  "environment": "Android15 API35 Pixel7 ARM64 emulator",
+  "unit_suites": [
+    {
+      "suite": "com.desperta.SchedulerTest",
+      "tests": 13,
+      "failures": 0,
+      "errors": 0,
+      "cases": [
+        "skippingTheOverrideUsesTheFollowingRegularOccurrence",
+        "zeroMaskIsAOneShotClockOccurrence",
+        "nextOverrideRejectsPastTimestampWithoutChangingExistingValue",
+        "springDstGapNormalizesToTheFirstValidLocalTime",
+        "skipUntilSuppressesExactlyOneMatchingOccurrence",
+        "replacingOverrideRetainsTheOriginalWeeklyOccurrence",
+        "earlierOverrideSuppressesTheOriginalOccurrenceAfterDelivery",
+        "dailyAlarmUsesTheNextFutureClockOccurrence",
+        "oneTimeOverrideWinsWhenItIsLaterThanTheRegularOccurrence",
+        "fallDstOccurrenceIsStrictlyAfterTheInput",
+        "restartAfterAnEarlierOverridePassedStillSkipsTheOriginalOccurrence",
+        "delayedOverrideIsConsumedOnceAndLeavesWeeklyScheduleIntact",
+        "sundayBitZeroSelectsSundayAndSkipsOtherDays"
+      ]
+    },
+    {
+      "suite": "com.desperta.AlarmTargetsTest",
+      "tests": 4,
+      "failures": 0,
+      "errors": 0,
+      "cases": [
+        "copyingAnAlarmDeepCopiesTargetsAndResetsSkipState",
+        "legacyBarcodeMissionUsesItsOriginalTargetAndRoundTripsWithoutTargetsField",
+        "nextOverrideRoundTripsAsAnAbsoluteTimestamp",
+        "multipleTargetsAreSerializedInOrderAndDuplicateEntriesAreIgnoredOnRead"
+      ]
+    },
+    {
+      "suite": "com.desperta.MissionLogicTest",
+      "tests": 6,
+      "failures": 0,
+      "errors": 0,
+      "cases": [
+        "photoSignatureNeedsDetailAndMatchesSimilarHashes",
+        "typingMathSpeechAndLabelsAreVerified",
+        "colorAndShakeChecksRejectWrongInputAndDebounce",
+        "squatRequiresDownThenUp",
+        "barcodeRequiresExactPayload",
+        "progressIsBoundedAndRequiresAllRepetitions"
+      ]
+    },
+    {
+      "suite": "com.desperta.BarcodeDecodeTest",
+      "tests": 3,
+      "failures": 0,
+      "errors": 0,
+      "cases": [
+        "code128CameraPixelDecoderPreservesLeadingZeros",
+        "qrCameraPixelDecoderPreservesExactPayload",
+        "ean13CameraPixelDecoderPreservesProductCode"
+      ]
+    },
+    {
+      "suite": "com.desperta.UpdateCheckerTest",
+      "tests": 5,
+      "failures": 0,
+      "errors": 0,
+      "cases": [
+        "invalidDownloadOriginIsRejectedBeforeNetworkAccess",
+        "checksumParserAcceptsBinaryAndTextFileForms",
+        "malformedResponseAndReleasesWithoutSafeApkStayCurrent",
+        "selectsNewestPublishedApkAndFiltersDraftsAndPreviews",
+        "versionsOrderStableAfterPrereleaseAndIgnoreVPrefix"
+      ]
+    }
+  ],
+  "android": {
+    "tests": 48,
+    "failures": 0,
+    "ignored": 0,
+    "seconds": 288.443,
+    "log": "android-1.2.0-final.txt"
+  }
+}

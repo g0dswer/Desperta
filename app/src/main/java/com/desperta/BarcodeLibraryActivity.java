@@ -15,7 +15,7 @@ public class BarcodeLibraryActivity extends Activity {
   private final ArrayList<String> codes = new ArrayList<>();
   private final ArrayList<String> selected = new ArrayList<>();
   private static final String KEY = "barcode_library";
-  private final int cyan = 0xff20c7df;
+  private final int cyan = 0xffF6B95D;
   private String feedback = "";
 
   @Override
@@ -69,7 +69,7 @@ public class BarcodeLibraryActivity extends Activity {
   private TextView label(String text, int size) {
     TextView view = new TextView(this);
     view.setText(text);
-    view.setTextColor(Color.WHITE);
+    view.setTextColor(0xffFFF6E7);
     view.setTextSize(size);
     view.setPadding(0, dp(10), 0, dp(10));
     return view;
@@ -88,7 +88,7 @@ public class BarcodeLibraryActivity extends Activity {
     button.setText(text);
     button.setAllCaps(false);
     button.setTextColor(Color.BLACK);
-    button.setBackground(background(0xfffafafa, false));
+    button.setBackground(background(0xffFFF6E7, false));
     LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(56));
     p.setMargins(0, dp(8), 0, dp(8));
     button.setLayoutParams(p);
@@ -100,7 +100,7 @@ public class BarcodeLibraryActivity extends Activity {
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setPadding(dp(22), dp(16), dp(22), dp(16));
-    root.setBackgroundColor(0xff19191d);
+    root.setBackgroundColor(0xff101A2A);
     root.setOnApplyWindowInsetsListener(
         (v, in) -> {
           root.setPadding(
@@ -113,7 +113,7 @@ public class BarcodeLibraryActivity extends Activity {
     setContentView(root);
     Button heading = button("‹  QR / Código de barras", this::finish);
     heading.setBackgroundColor(Color.TRANSPARENT);
-    heading.setTextColor(Color.WHITE);
+    heading.setTextColor(0xffFFF6E7);
     heading.setTextSize(20);
     root.addView(heading);
     root.addView(
@@ -142,13 +142,13 @@ public class BarcodeLibraryActivity extends Activity {
       LinearLayout row = new LinearLayout(this);
       row.setGravity(Gravity.CENTER_VERTICAL);
       row.setPadding(dp(10), dp(8), dp(10), dp(8));
-      row.setBackground(background(0xff27272b, selected.contains(code)));
+      row.setBackground(background(0xff1B2A3D, selected.contains(code)));
       LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
       rp.setMargins(0, dp(6), 0, dp(6));
       list.addView(row, rp);
       CheckBox check = new CheckBox(this);
       check.setText(code);
-      check.setTextColor(Color.WHITE);
+      check.setTextColor(0xffFFF6E7);
       check.setTextSize(18);
       check.setChecked(selected.contains(code));
       row.addView(check, new LinearLayout.LayoutParams(0, -2, 1));
@@ -192,7 +192,7 @@ public class BarcodeLibraryActivity extends Activity {
                           })
                       .show());
       menu.setBackgroundColor(Color.TRANSPARENT);
-      menu.setTextColor(Color.WHITE);
+      menu.setTextColor(0xffFFF6E7);
       menu.setContentDescription("Opções do código " + code);
       row.addView(menu, new LinearLayout.LayoutParams(dp(48), dp(48)));
     }
@@ -212,7 +212,7 @@ public class BarcodeLibraryActivity extends Activity {
     preview.setEnabled(!selected.isEmpty());
     LinearLayout footer = new LinearLayout(this);
     preview.setBackground(background(0xff414147, false));
-    preview.setTextColor(Color.WHITE);
+    preview.setTextColor(0xffFFF6E7);
     LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(56), 1);
     pp.setMargins(0, dp(8), dp(8), dp(8));
     footer.addView(preview, pp);

@@ -1,0 +1,8 @@
+
+com.desperta.CameraPipelineTest:.
+
+Time: 9.275
+
+OK (1 test)
+
+

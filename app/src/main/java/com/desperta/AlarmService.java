@@ -280,7 +280,17 @@ public class AlarmService extends Service {
       }
       return;
     }
-    if (!request.preview && !request.snooze && !request.wakeCheck) {
+    boolean realTrigger = !request.preview && !request.snooze && !request.wakeCheck;
+    if (realTrigger) {
+      // The one-time editor changes only the upcoming AlarmManager delivery. Consume that marker
+      // at the real trigger, before re-arming the weekly schedule, so a delayed delivery cannot
+      // schedule the temporary timestamp a second time. Preview, snooze, and wake-check sessions
+      // intentionally leave the marker alone.
+      if (Scheduler.consumeNextOverride(alarm, System.currentTimeMillis())) {
+        Store.save(this, alarm);
+      }
+    }
+    if (realTrigger) {
       // AlarmManager entries are one-shot.  Re-arm the repeating alarm
       // before starting media so a long mission cannot lose tomorrow's
       // delivery.  One-shot alarms are disabled after dismissal.

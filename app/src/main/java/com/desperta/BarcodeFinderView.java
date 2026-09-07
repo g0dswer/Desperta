@@ -9,6 +9,12 @@ import android.view.View;
 
 /** Portrait scanner overlay with a landscape framing window and dimmed outside area. */
 public final class BarcodeFinderView extends View {
+  public enum FeedbackState {
+    NEUTRAL,
+    ERROR,
+    SUCCESS
+  }
+
   public interface FrameListener {
     void onFrameChanged(int width, int height);
   }
@@ -18,6 +24,7 @@ public final class BarcodeFinderView extends View {
   private FrameListener frameListener;
   private int frameWidth;
   private int frameHeight;
+  private FeedbackState feedbackState = FeedbackState.NEUTRAL;
 
   public BarcodeFinderView(Context context) {
     super(context);
@@ -30,6 +37,12 @@ public final class BarcodeFinderView extends View {
     if (frameWidth > 0 && frameHeight > 0 && frameListener != null) {
       frameListener.onFrameChanged(frameWidth, frameHeight);
     }
+  }
+
+  /** Updates the border without interrupting the camera stream after a decoded result. */
+  public void setFeedbackState(FeedbackState state) {
+    feedbackState = state == null ? FeedbackState.NEUTRAL : state;
+    invalidate();
   }
 
   @Override
@@ -62,10 +75,14 @@ public final class BarcodeFinderView extends View {
 
     paint.setStyle(Paint.Style.STROKE);
     paint.setStrokeWidth(dp(4));
-    paint.setColor(Color.rgb(20, 24, 30));
+    if (feedbackState == FeedbackState.SUCCESS) {
+      paint.setColor(Color.rgb(132, 213, 176));
+    } else if (feedbackState == FeedbackState.ERROR) {
+      paint.setColor(Color.rgb(255, 173, 176));
+    } else {
+      paint.setColor(Color.rgb(246, 185, 93));
+    }
     canvas.drawRoundRect(frame, dp(6), dp(6), paint);
-
-
   }
 
   private int dp(int value) {

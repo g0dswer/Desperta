@@ -1,1 +1,18 @@
-<resources><style name="AppTheme" parent="android:style/Theme.Material.NoActionBar"><item name="android:fontFamily">sans</item><item name="android:colorAccent">#20C7DF</item><item name="android:windowLightStatusBar">false</item><item name="android:statusBarColor">#09090B</item><item name="android:navigationBarColor">#09090B</item><item name="android:windowActionModeOverlay">true</item><item name="android:windowBackground">#09090B</item></style></resources>
+<resources>
+    <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">#F6B95D</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">#101A2A</item>
+        <item name="android:navigationBarColor">#101A2A</item>
+        <item name="android:windowActionModeOverlay">true</item>
+        <item name="android:windowBackground">#101A2A</item>
+    </style>
+    <style name="DespertaDialog" parent="android:style/Theme.Material.Dialog.Alert">
+        <item name="android:colorAccent">#F6B95D</item>
+        <item name="android:colorBackground">#1B2A3D</item>
+        <item name="android:windowBackground">#1B2A3D</item>
+        <item name="android:textColorPrimary">#FFF6E7</item>
+        <item name="android:textColorSecondary">#ADB9C9</item>
+    </style>
+</resources>

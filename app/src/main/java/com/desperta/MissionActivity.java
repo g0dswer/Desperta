@@ -83,13 +83,14 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private static final int CAMERA_SQUAT = 3;
   private static final int HASH_SIZE = 8;
 
-  private static final int BG = Color.rgb(12, 12, 15);
-  private static final int CARD = Color.rgb(28, 28, 32);
-  private static final int CARD_ALT = Color.rgb(42, 42, 48);
-  private static final int WHITE = Color.rgb(246, 246, 248);
-  private static final int MUTED = Color.rgb(178, 178, 187);
-  private static final int PINK = Color.rgb(255, 45, 83);
-  private static final int CYAN = Color.rgb(41, 193, 224);
+  private static final int BG = Color.rgb(16, 26, 42);
+  private static final int CARD = Color.rgb(27, 42, 61);
+  private static final int CARD_ALT = Color.rgb(36, 57, 79);
+  private static final int WHITE = Color.rgb(255, 246, 231);
+  private static final int MUTED = Color.rgb(173, 185, 201);
+  private static final int PRIMARY = Color.rgb(246, 185, 93);
+  private static final int PRIMARY_TEXT = Color.rgb(23, 32, 51);
+  private static final int CYAN = Color.rgb(246, 185, 93);
 
   private static final int[] COLOR_VALUES = {
     Color.rgb(245, 72, 78), Color.rgb(255, 155, 54), Color.rgb(255, 216, 74),
@@ -321,10 +322,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
       case "barcode":
         promptView.setText(
             isRegisterMode()
-                ? "Escaneie o código de barras que será usado neste alarme."
-                : "Escaneie o código de barras registrado para desligar o alarme.");
-        addPrimaryButton("Escanear QR / código de barras", v -> launchBarcodeScanner());
-        setStatus("A entrada aceita é exclusivamente o scanner da câmera.");
+                ? "Cadastre o código que você usará para desligar este alarme."
+                : "Escaneie um dos códigos escolhidos para desligar o alarme.");
+        addPrimaryButton("Escanear código", v -> launchBarcodeScanner());
+        setStatus("A leitura acontece dentro do retângulo e permanece aberta se o código não for aceito.");
         if (!restored) mainHandler.postDelayed(this::launchBarcodeScanner, 300L);
         break;
       case "photo":
@@ -436,10 +437,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private void addPrimaryButton(String text, View.OnClickListener listener) {
     primaryButton = new Button(this);
     primaryButton.setText(text);
-    primaryButton.setTextColor(WHITE);
+    primaryButton.setTextColor(PRIMARY_TEXT);
     primaryButton.setTextSize(16);
     primaryButton.setAllCaps(false);
-    primaryButton.setBackground(round(PINK, 20));
+    primaryButton.setBackground(round(PRIMARY, 20));
     primaryButton.setOnClickListener(listener);
     content.addView(
         primaryButton, marginParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54), 0, 14, 0, 0));
@@ -570,6 +571,14 @@ public class MissionActivity extends Activity implements SensorEventListener {
         isRegisterMode()
             ? "Escaneie o código de barras para registrá-lo"
             : "Escaneie o código de barras registrado");
+    integrator
+        .addExtra(AlarmCaptureActivity.EXTRA_REGISTER_MODE, isRegisterMode())
+        .addExtra(
+            AlarmCaptureActivity.EXTRA_EXPECTED_TARGET, target == null ? "" : target)
+        // IntentIntegrator forwards String[] extras; an ArrayList would be converted to one
+        // toString() value by its compatibility adapter and lose the multi-code selection.
+        .addExtra(
+            AlarmCaptureActivity.EXTRA_EXPECTED_TARGETS, targets.toArray(new String[0]));
     integrator.setBeepEnabled(true);
     // Keep the embedded scanner's calibrated landscape camera surface. The custom activity adds
     // lock-screen flags without changing the decode geometry used by the device camera pipeline.
@@ -621,7 +630,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     } else if (matchesAnyBarcode(contents)) {
       completeMission(null);
     } else {
-      setStatus("Esse código de barras não corresponde ao código registrado.");
+      setStatus("Código lido, mas ele não está selecionado. Tente outro.");
     }
   }
 

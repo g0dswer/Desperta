@@ -1,5 +1,7 @@
 # Inventário das oito imagens e validação
 
+As funções originais abaixo continuam disponíveis. Consulte também o [redesenho aprovado da versão 1.2.0](REDESIGN-1.2.0.md) e seus [testes](TESTES-1.2.0.md).
+
 O escopo abaixo corresponde às cinco primeiras imagens e às três adicionais. Sono, Manhã e Relatório foram removidos por solicitação posterior. Conta, Pro, propaganda e banners promocionais foram substituídos por todas as funções gratuitas, sem login e sem anúncios.
 
 **Legenda:** “automatizado” significa teste executável de lógica ou integração; “emulador” significa fluxo Android executado; “aparelho pendente” significa que não existe evidência de validação em hardware físico. Não equivale a garantia em todos os fabricantes.

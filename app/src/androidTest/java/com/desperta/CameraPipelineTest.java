@@ -115,7 +115,12 @@ public class CameraPipelineTest {
             new Intent(c, MissionActivity.class)
                 .putExtra("type", "barcode")
                 .putExtra("target", "DIFFERENT-CODE"))) {
-      assertTrue(ui.wait(Until.hasObject(By.textContains("não corresponde")), 25000));
+      assertTrue(ui.wait(Until.hasObject(By.textContains("não está selecionado")), 25000));
+      // The custom scanner remains visible after a decoded but unselected code so the user can
+      // point at another object without reopening the camera.
+      assertNotEquals(Lifecycle.State.DESTROYED, s.getState());
+      ui.pressBack();
+      assertTrue(ui.wait(Until.hasObject(By.text("Escanear código")), 3000));
       assertEquals(Lifecycle.State.RESUMED, s.getState());
       ui.pressBack();
       waitFinished(s);
@@ -153,6 +158,32 @@ public class CameraPipelineTest {
         if (!resumed) SystemClock.sleep(100);
       }
       assertTrue("Main screen must return after completing the alarm", resumed);
+    }
+  }
+
+  @Test
+  public void guidedPreviewRunsMissionWithoutWritingHistoryOrDisablingAlarm() throws Exception {
+    Alarm preview = new Alarm();
+    preview.id = 65003;
+    preview.label = "Prévia";
+    preview.enabled = true;
+    preview.missions.add(new Alarm.Mission("typing", "ACORDAR", 1));
+    Store.save(c, preview);
+    try (ActivityScenario<RingActivity> ring =
+        ActivityScenario.launch(
+            new Intent(c, RingActivity.class)
+                .putExtra(Scheduler.EXTRA_ALARM_ID, preview.id)
+                .putExtra(Scheduler.EXTRA_PREVIEW, true))) {
+      assertTrue(ui.wait(Until.hasObject(By.text("Digitar resposta")), 5000));
+      ui.findObject(new UiSelector().text("Digitar resposta")).click();
+      assertTrue(ui.wait(Until.hasObject(By.text("Texto a digitar: ACORDAR")), 5000));
+      ui.findObject(new UiSelector().className("android.widget.EditText")).setText("ACORDAR");
+      ui.findObject(new UiSelector().text("Verificar texto")).click();
+      assertTrue(ui.wait(Until.hasObject(By.text("Alarme desligado. Bom dia!")), 5000));
+      assertEquals(0, Store.history(c).length());
+      assertTrue(Store.get(c, preview.id).enabled);
+    } finally {
+      c.stopService(new Intent(c, AlarmService.class));
     }
   }
 }

@@ -71,6 +71,8 @@ public class ScannerAppearanceTest {
         ui.wait(
             Until.hasObject(By.text("Posicione o QR/código de barras dentro do retângulo")),
             10_000));
+    assertTrue(ui.wait(Until.hasObject(By.text("Leitor de código")), 10_000));
+    assertTrue(ui.wait(Until.hasObject(By.text("Lanterna")), 10_000));
     assertTrue(ui.wait(Until.hasObject(By.descContains("lanterna")), 10_000));
 
     final View[] finderHolder = new View[1];

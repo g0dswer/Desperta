@@ -73,14 +73,14 @@ public class SettingsActivity extends Activity {
 
   private void render() {
     dark = isDarkTheme();
-    background = Color.parseColor(dark ? "#09090B" : "#F5F5F7");
-    surface = Color.parseColor(dark ? "#19191C" : "#FFFFFF");
-    surfaceRaised = Color.parseColor(dark ? "#25252A" : "#EEEEF2");
-    primaryText = Color.parseColor(dark ? "#F6F6F8" : "#17171A");
-    secondaryText = Color.parseColor(dark ? "#B7B7C0" : "#5D5D68");
-    accent = Color.parseColor(dark ? "#36C6E8" : "#008EAD");
-    pink = Color.parseColor(dark ? "#FF3159" : "#D71D45");
-    positive = Color.parseColor(dark ? "#42D980" : "#087A43");
+    background = Color.parseColor(dark ? "#101A2A" : "#FAF5EC");
+    surface = Color.parseColor(dark ? "#1B2A3D" : "#FFFFFF");
+    surfaceRaised = Color.parseColor(dark ? "#263A52" : "#F1E8D8");
+    primaryText = Color.parseColor(dark ? "#FFF6E7" : "#172033");
+    secondaryText = Color.parseColor(dark ? "#ADB9C9" : "#59606F");
+    accent = Color.parseColor(dark ? "#F6B95D" : "#9C5D08");
+    pink = Color.parseColor(dark ? "#FF6B6B" : "#C84C4C");
+    positive = Color.parseColor(dark ? "#83D6A3" : "#237747");
     configureWindow();
 
     ScrollView scroll = new ScrollView(this);
@@ -106,6 +106,15 @@ public class SettingsActivity extends Activity {
             Typeface.NORMAL,
             secondaryText),
         lp(0, 0, 0, 20));
+
+    root.addView(sectionTitle("Desperta"));
+    root.addView(
+        row(
+            "Atualizações",
+            UpdateChecker.summary(this),
+            "Verifique versões públicas do GitHub e instale somente após a confirmação do Android.",
+            v -> openUpdateActivity()),
+        lp(0, 0, 0, 18));
 
     root.addView(sectionTitle("Preferências"));
     LinearLayout preferences = card();
@@ -215,14 +224,14 @@ public class SettingsActivity extends Activity {
     back.setGravity(Gravity.CENTER);
     back.setContentDescription("Voltar");
     back.setOnClickListener(v -> finish());
-    header.addView(back, new LinearLayout.LayoutParams(dp(44), dp(44)));
+    header.addView(back, new LinearLayout.LayoutParams(dp(48), dp(48)));
 
     TextView title = text("Configurações", 22, Typeface.BOLD, primaryText);
     title.setGravity(Gravity.CENTER);
-    header.addView(title, new LinearLayout.LayoutParams(0, dp(44), 1f));
+    header.addView(title, new LinearLayout.LayoutParams(0, dp(48), 1f));
 
     TextView empty = text("", 22, Typeface.NORMAL, primaryText);
-    header.addView(empty, new LinearLayout.LayoutParams(dp(44), dp(44)));
+    header.addView(empty, new LinearLayout.LayoutParams(dp(48), dp(48)));
     return header;
   }
 
@@ -382,7 +391,7 @@ public class SettingsActivity extends Activity {
     button.setTextSize(14);
     button.setAllCaps(false);
     button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    button.setTextColor(filled ? Color.WHITE : primaryText);
+    button.setTextColor(filled ? Color.parseColor("#172033") : primaryText);
     button.setMinHeight(0);
     button.setMinWidth(0);
     button.setPadding(dp(12), 0, dp(12), 0);
@@ -401,6 +410,7 @@ public class SettingsActivity extends Activity {
   private View divider() {
     View divider = new View(this);
     divider.setBackgroundColor(dark ? Color.parseColor("#2C2C31") : Color.parseColor("#E4E4E8"));
+    divider.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
     return divider;
   }
 
@@ -626,9 +636,13 @@ public class SettingsActivity extends Activity {
     protectionStatus.setTextColor(active ? positive : secondaryText);
   }
 
+  private void openUpdateActivity() {
+    startActivity(new Intent(this, UpdateActivity.class));
+  }
+
   private void configureWindow() {
-    getWindow().setStatusBarColor(dark ? Color.BLACK : background);
-    getWindow().setNavigationBarColor(dark ? Color.BLACK : background);
+    getWindow().setStatusBarColor(background);
+    getWindow().setNavigationBarColor(background);
     int flags = 0;
     if (!dark) flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
     if (!dark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

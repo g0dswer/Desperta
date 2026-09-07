@@ -20,7 +20,16 @@ public class Alarm {
       labelReminder = false,
       extraLoud = false,
       preventPower = false;
-  public long skipUntil = 0;
+  /**
+   * Absolute local-time instant for a one-time replacement of the next regular occurrence.
+   *
+   * <p>A value of zero means that the weekly schedule is active. The field is deliberately an
+   * instant rather than another hour/minute pair so that the UI can choose a concrete upcoming
+   * date, and so a process restart cannot accidentally reinterpret the edit as today's alarm.
+   * nextOverrideOriginalAt remembers the regular occurrence displaced by the override, including
+   * when the temporary time is earlier than the regular time on the same day.
+   */
+  public long skipUntil = 0, nextOverrideAt = 0, nextOverrideOriginalAt = 0;
   public String label = "Bom dia", sound = "", wallpaper = "Aurora";
   public List<Mission> missions = new ArrayList<>();
 
@@ -99,6 +108,8 @@ public class Alarm {
     Alarm a = from(json());
     a.id = (int) (System.nanoTime() & 0x3fffffff);
     a.skipUntil = 0;
+    a.nextOverrideAt = 0;
+    a.nextOverrideOriginalAt = 0;
     return a;
   }
 }

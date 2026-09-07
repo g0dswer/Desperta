@@ -1,3 +1,5 @@
+Relatório atual: [Desperta 1.2.0](TESTES-1.2.0.md). Os registros abaixo são históricos.
+
 > Para a atualização atual, consulte [Testes da versão 1.1.0](TESTES-1.1.0.md). Abaixo está o registro histórico da 1.0.0.
 
 # Testes executados

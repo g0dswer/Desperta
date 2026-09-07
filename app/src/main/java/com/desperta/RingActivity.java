@@ -22,6 +22,7 @@ import android.view.Window;
 import android.view.WindowInsets;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ScrollView;
 import android.widget.TextView;
@@ -31,19 +32,23 @@ import java.util.Locale;
 /** Full-screen alarm surface. Playback and session state stay in AlarmService. */
 public class RingActivity extends Activity {
   private static final int REQUEST_MISSION = 710;
-  private static final int BG = Color.rgb(9, 9, 11);
-  private static final int CARD = Color.rgb(27, 27, 31);
-  private static final int FG = Color.rgb(250, 250, 252);
-  private static final int MUTED = Color.rgb(166, 166, 177);
-  private static final int PINK = Color.rgb(255, 49, 89);
-  private static final int CYAN = Color.rgb(35, 201, 225);
+  private static final int BG = Color.rgb(16, 26, 42);
+  private static final int CARD = Color.rgb(27, 42, 61);
+  private static final int FG = Color.rgb(255, 246, 231);
+  private static final int MUTED = Color.rgb(173, 185, 201);
+  private static final int PRIMARY = Color.rgb(246, 185, 93);
+  private static final int PRIMARY_TEXT = Color.rgb(23, 32, 51);
+  private static final int SUCCESS = Color.rgb(132, 213, 176);
+  private static final int ERROR = Color.rgb(255, 173, 176);
 
   private int alarmId = -1;
   private boolean preview;
   private Alarm alarm;
   private int openMissionIndex = -1;
+  private int previewMissionIndex;
   private TextView status;
   private TextView missionStatus;
+  private Button primaryAction;
   private boolean missionOpen;
   private BroadcastReceiver missionReceiver;
   private final Handler handler = new Handler();
@@ -56,6 +61,7 @@ public class RingActivity extends Activity {
     if (state != null) {
       missionOpen = state.getBoolean("missionOpen", false);
       openMissionIndex = state.getInt("openMissionIndex", -1);
+      previewMissionIndex = Math.max(0, state.getInt("previewMissionIndex", 0));
     }
     alarm = Store.get(this, alarmId);
     if (alarm == null) {
@@ -73,6 +79,7 @@ public class RingActivity extends Activity {
   protected void onSaveInstanceState(Bundle outState) {
     outState.putBoolean("missionOpen", missionOpen);
     outState.putInt("openMissionIndex", openMissionIndex);
+    outState.putInt("previewMissionIndex", previewMissionIndex);
     super.onSaveInstanceState(outState);
   }
 
@@ -132,8 +139,11 @@ public class RingActivity extends Activity {
 
     LinearLayout header = new LinearLayout(this);
     header.setGravity(android.view.Gravity.CENTER_VERTICAL);
-    TextView sun = label("☀", 34, CYAN);
-    header.addView(sun, new LinearLayout.LayoutParams(dp(52), -2));
+    ImageView sun = new ImageView(this);
+    sun.setImageResource(R.drawable.ic_alarm);
+    sun.setContentDescription("Desperta");
+    sun.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+    header.addView(sun, new LinearLayout.LayoutParams(dp(52), dp(52)));
     LinearLayout titleBox = new LinearLayout(this);
     titleBox.setOrientation(LinearLayout.VERTICAL);
     TextView title = label(preview ? "Prévia do alarme" : "Despertar", 23, FG);
@@ -148,8 +158,16 @@ public class RingActivity extends Activity {
     header.addView(titleBox, new LinearLayout.LayoutParams(0, -2, 1));
     root.addView(header);
 
-    TextView time =
-        label(String.format(Locale.getDefault(), "%02d:%02d", alarm.hour, alarm.minute), 66, FG);
+    java.util.Calendar now = java.util.Calendar.getInstance();
+    String displayedTime =
+        preview
+            ? String.format(Locale.getDefault(), "%02d:%02d", alarm.hour, alarm.minute)
+            : String.format(
+                Locale.getDefault(),
+                "%02d:%02d",
+                now.get(java.util.Calendar.HOUR_OF_DAY),
+                now.get(java.util.Calendar.MINUTE));
+    TextView time = label(displayedTime, 66, FG);
     time.setGravity(android.view.Gravity.CENTER);
     LinearLayout.LayoutParams timeParams = new LinearLayout.LayoutParams(-1, -2);
     timeParams.setMargins(0, dp(26), 0, dp(6));
@@ -166,12 +184,12 @@ public class RingActivity extends Activity {
     scroll.addView(content);
     root.addView(scroll, contentParams);
 
-    if (!preview && !alarm.missions.isEmpty()) {
+    if (!alarm.missions.isEmpty()) {
       LinearLayout missionCard = new LinearLayout(this);
       missionCard.setOrientation(LinearLayout.VERTICAL);
       missionCard.setPadding(dp(18), dp(15), dp(18), dp(15));
       missionCard.setBackground(round(CARD, 22));
-      TextView heading = label("Missão para desligar", 19, FG);
+      TextView heading = label(preview ? "Teste de missão" : "Missão para desligar", 19, FG);
       heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
       missionCard.addView(heading);
       missionStatus = label("Prepare-se…", 16, MUTED);
@@ -188,7 +206,7 @@ public class RingActivity extends Activity {
       content.addView(hint, margins(0, 28, 0, 10));
     }
 
-    status = label("", 15, CYAN);
+    status = label("", 15, MUTED);
     status.setGravity(android.view.Gravity.CENTER);
     content.addView(status, margins(0, 5, 0, 10));
 
@@ -196,16 +214,20 @@ public class RingActivity extends Activity {
     actions.setOrientation(LinearLayout.VERTICAL);
     String primaryText =
         preview
-            ? "Parar prévia"
-            : (alarm.missions.isEmpty() ? "Encerrar alarme" : "Continuar missão");
+            ? (alarm.missions.isEmpty() ? "Parar prévia" : contextualMissionAction())
+            : (alarm.missions.isEmpty() ? "Desligar alarme" : contextualMissionAction());
     Button primary =
         action(
             primaryText,
-            PINK,
+            PRIMARY,
             () -> {
               if (preview) {
-                AlarmService.stopPreview(this, alarmId);
-                finish();
+                if (alarm.missions.isEmpty()) {
+                  AlarmService.stopPreview(this, alarmId);
+                  finish();
+                } else {
+                  launchMission(currentMissionIndex());
+                }
               } else if (alarm.missions.isEmpty()) {
                 AlarmService.dismiss(this, alarmId);
                 finish();
@@ -216,18 +238,21 @@ public class RingActivity extends Activity {
                 launchMission(currentMissionIndex());
               }
             });
+    primaryAction = primary;
     actions.addView(primary);
     if (!preview) {
       JSONObjectSession session = JSONObjectSession.read(this);
       boolean snoozeAvailable = alarm.snoozeLimit > session.snoozeCount;
       if (snoozeAvailable) {
+        int remaining = Math.max(0, alarm.snoozeLimit - session.snoozeCount);
+        String remainingLabel = remaining == 1 ? "resta 1" : "restam " + remaining;
         Button snooze =
             action(
-                "Soneca de " + Math.max(1, alarm.snoozeMinutes) + " min",
+                "Soneca de " + Math.max(1, alarm.snoozeMinutes) + " min · " + remainingLabel,
                 CARD,
                 () -> {
                   if (!AlarmService.canSnooze(this, alarmId)) {
-                    setStatus("Limite de sonecas atingido.", PINK);
+                    setStatus("Limite de sonecas atingido.", ERROR);
                     return;
                   }
                   AlarmService.snooze(this, alarmId);
@@ -239,11 +264,16 @@ public class RingActivity extends Activity {
         limit.setGravity(android.view.Gravity.CENTER);
         actions.addView(limit);
       }
-      if (!alarm.missions.isEmpty()) {
-        Button retry =
-            action("Tentar missão novamente", CARD, () -> launchMission(currentMissionIndex()));
-        actions.addView(retry);
-      }
+    } else if (!alarm.missions.isEmpty()) {
+      // Preview needs its own exit affordance because the primary action advances the mission.
+      actions.addView(
+          action(
+              "Parar prévia",
+              CARD,
+              () -> {
+                AlarmService.stopPreview(this, alarmId);
+                finish();
+              }));
     }
     root.addView(actions, new LinearLayout.LayoutParams(-1, -2));
     setContentView(root);
@@ -262,13 +292,14 @@ public class RingActivity extends Activity {
             int index = intent.getIntExtra(AlarmService.EXTRA_MISSION_INDEX, 0);
             missionOpen = false;
             if (!success) {
-              setStatus("Ainda não. Tente novamente.", PINK);
+              setStatus("Código lido, mas a missão continua pendente.", ERROR);
             } else if (done) {
-              setStatus("Missão concluída", CYAN);
-              finish();
+              setStatus("Alarme desligado. Bom dia!", SUCCESS);
+              handler.postDelayed(RingActivity.this::finish, 650L);
             } else {
-              setStatus("Muito bem. Próxima missão…", CYAN);
+              setStatus("Etapa concluída. Próxima missão…", SUCCESS);
               updateMissionStatus(index);
+              updatePrimaryAction();
               handler.postDelayed(() -> launchMission(index), 180L);
             }
           }
@@ -286,7 +317,24 @@ public class RingActivity extends Activity {
   }
 
   private int currentMissionIndex() {
-    return Math.max(0, JSONObjectSession.read(this).index);
+    return preview ? Math.max(0, previewMissionIndex) : Math.max(0, JSONObjectSession.read(this).index);
+  }
+
+  private String contextualMissionAction() {
+    if (alarm == null || alarm.missions.isEmpty()) return "Desligar alarme";
+    int index = Math.min(Math.max(0, currentMissionIndex()), alarm.missions.size() - 1);
+    String type = alarm.missions.get(index).type;
+    if ("barcode".equals(type)) return "Escanear código";
+    if ("photo".equals(type) || "object".equals(type) || "squat".equals(type)) {
+      return "Abrir câmera";
+    }
+    if ("steps".equals(type)) return "Iniciar passos";
+    if ("shake".equals(type)) return "Iniciar agitação";
+    if ("rhythm".equals(type)) return "Iniciar microfone";
+    if ("typing".equals(type)) return "Digitar resposta";
+    if ("math".equals(type)) return "Resolver conta";
+    if ("colors".equals(type)) return "Encontrar cor";
+    return "Continuar missão";
   }
 
   private void launchMission(int index) {
@@ -297,6 +345,7 @@ public class RingActivity extends Activity {
     missionOpen = true;
     openMissionIndex = index;
     updateMissionStatus(index);
+    updatePrimaryAction();
     Intent intent =
         new Intent()
             .setClassName(this, getPackageName() + ".MissionActivity")
@@ -304,7 +353,7 @@ public class RingActivity extends Activity {
             .putExtra("target", mission.target)
             .putStringArrayListExtra(MissionActivity.EXTRA_TARGETS, mission.acceptedCodes())
             .putExtra("count", mission.count)
-            .putExtra("alarm_id", alarmId)
+            .putExtra("alarm_id", preview ? -1 : alarmId)
             .putExtra("mission_index", index)
             .putExtra("preview", false)
             .putExtra("mode", "solve");
@@ -313,15 +362,25 @@ public class RingActivity extends Activity {
     } catch (RuntimeException missingMissionScreen) {
       missionOpen = false;
       openMissionIndex = -1;
-      setStatus("Tela da missão indisponível", PINK);
+      setStatus("Tela da missão indisponível", ERROR);
     }
   }
 
   private void updateMissionStatus(int index) {
     if (missionStatus != null && alarm != null) {
-      missionStatus.setText(
-          "Missão " + Math.min(index + 1, alarm.missions.size()) + " de " + alarm.missions.size());
+      if (alarm.missions.size() <= 1) {
+        missionStatus.setText("Conclua a missão para desligar o alarme");
+      } else {
+        missionStatus.setText(
+            "Etapa " + Math.min(index + 1, alarm.missions.size()) + " de " + alarm.missions.size());
+      }
     }
+  }
+
+  private void updatePrimaryAction() {
+    if (primaryAction == null || alarm == null || alarm.missions.isEmpty()) return;
+    primaryAction.setText(contextualMissionAction());
+    primaryAction.setContentDescription(contextualMissionAction());
   }
 
   @Override
@@ -332,6 +391,23 @@ public class RingActivity extends Activity {
     int completedMissionIndex = openMissionIndex;
     openMissionIndex = -1;
     if (resultCode == RESULT_OK) {
+      if (preview) {
+        int next = completedMissionIndex + 1;
+        if (next >= alarm.missions.size()) {
+          setStatus("Alarme desligado. Bom dia!", SUCCESS);
+          AlarmService.stopPreview(this, alarmId);
+          handler.postDelayed(
+              RingActivity.this::finish,
+              650L);
+        } else {
+          previewMissionIndex = next;
+          setStatus("Etapa concluída. Próxima missão…", SUCCESS);
+          updateMissionStatus(next);
+          updatePrimaryAction();
+          handler.postDelayed(() -> launchMission(next), 180L);
+        }
+        return;
+      }
       // MissionActivity reports successful alarm-mode missions directly to the foreground
       // service as soon as the scanner/mission accepts them. Older or standalone mission
       // screens still return the result here, so retain this as the compatibility fallback.
@@ -340,7 +416,7 @@ public class RingActivity extends Activity {
       if (!serviceReported) AlarmService.missionResult(this, alarmId, completedMissionIndex, true);
     } else {
       // Cancellation and a wrong answer leave the ringing service alive.
-      setStatus("Missão não concluída. Tente novamente.", PINK);
+      setStatus("Missão não concluída. Tente novamente.", ERROR);
     }
   }
 
@@ -398,7 +474,7 @@ public class RingActivity extends Activity {
     Button button = new Button(this);
     button.setText(text);
     button.setTextSize(17);
-    button.setTextColor(FG);
+    button.setTextColor(color == PRIMARY ? PRIMARY_TEXT : FG);
     button.setAllCaps(false);
     button.setMinHeight(dp(55));
     button.setBackground(round(color, 18));
@@ -436,7 +512,7 @@ public class RingActivity extends Activity {
     } else if ("Noite".equalsIgnoreCase(value)) {
       colors = new int[] {Color.rgb(24, 16, 45), Color.rgb(11, 11, 17), BG};
     } else {
-      colors = new int[] {Color.rgb(56, 19, 44), Color.rgb(22, 25, 48), BG};
+      colors = new int[] {Color.rgb(38, 39, 68), Color.rgb(23, 36, 57), BG};
     }
     return new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
   }

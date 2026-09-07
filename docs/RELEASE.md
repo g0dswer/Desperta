@@ -1,22 +1,24 @@
-# Desperta 1.1.0
+# Desperta 1.2.0 — Amanhecer
 
-Atualização gratuita, sem anúncios e sem login. Instale o APK sobre a versão anterior: o pacote e a chave de assinatura são os mesmos.
+Nova identidade visual e fluxos mais simples para configurar e desligar alarmes. Gratuito, sem anúncios e sem login. Instale sobre a versão anterior para preservar seus alarmes.
 
-## Mudanças solicitadas
+## Mudanças
 
-- QR/código de barras: a conclusão aceita pelo scanner é enviada diretamente ao serviço do alarme, com proteção contra callbacks duplicados ou atrasados. O scanner também permite exibição sobre a tela bloqueada.
-- Respostas atrasadas após encerrar o alarme são descartadas sem reiniciar o serviço.
-- Leitor vertical como a referência: câmera em tela cheia, retângulo central, área externa escurecida, instrução em português e lanterna.
-- Horário: colunas de horas e minutos com rolagem circular, em vez do relógio em disco.
-- Biblioteca de códigos: adicionar pela câmera, cadastrar vários, selecionar os aceitos, revisar o valor completo, excluir e testar a leitura antes de concluir. Qualquer código selecionado conclui a missão; códigos diferentes não encerram o alarme.
-- Compatibilidade com os códigos e alarmes da versão 1.0.0.
+- Identidade Amanhecer: azul profundo, branco quente, âmbar e novo ícone.
+- Próximo alarme em destaque, cartões compactos e ações separadas.
+- Editor com seções recolhíveis e botão Salvar fixo; horário por rolagem e atalhos de dias.
+- Missões por objetivo, explicações, teste antes de adicionar e reordenação.
+- Leitor que mantém a câmera aberta após código incorreto, orienta sobre os códigos aceitos e mostra a lanterna.
+- Tela do alarme com uma ação principal contextual e sonecas restantes.
+- Pular com data, desfazer, modelos pessoais e horário diferente só na próxima ocorrência.
+- Verificação de atualizações pelo GitHub, consulta diária opcional, download conferido e instalação com confirmação do Android.
 
-## Validação
+A biblioteca de códigos mantém o formato atual, conforme solicitado. Não foram adicionados nomes de objetos/aliases, novas abas, login ou cobranças.
 
-**18 testes locais e 36 testes Android passaram**, além de quatro testes de câmera com EAN-13 e um teste de alarme com PIN no emulador.
+## Testes
 
-Os resultados e os cenários executados estão no [relatório da versão 1.1.0](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.1.0.md). A validação usa Android 15 em emulador e câmera alimentada com uma imagem de QR, passando pelo driver de câmera e pelo ZXing.
+**31 testes de lógica e 48 testes Android passaram**, além do build de release e lint.
 
-O aparelho Samsung do relato não esteve disponível para reproduzir sua falha específica. Sensores físicos, voz, vibração, Bluetooth e reconhecimento visual em cenas reais continuam com a cobertura limitada descrita na [matriz de funcionalidades](https://github.com/g0dswer/Desperta/blob/main/docs/FUNCIONALIDADES.md). Mantida a classificação de pré-release.
+Consulte o [relatório da versão](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.2.0.md) e a [matriz do redesenho](https://github.com/g0dswer/Desperta/blob/main/docs/REDESIGN-1.2.0.md). A validação usa Android 15 em emulador; câmera e sensores físicos continuam com os limites descritos na documentação. Mantida a classificação de pré-lançamento.
 
-Baixe `Desperta-1.1.0.apk`. A integridade pode ser conferida com `SHA256SUMS.txt`.
+Baixe `Desperta-1.2.0.apk`. `SHA256SUMS.txt` permite conferir a integridade do arquivo.

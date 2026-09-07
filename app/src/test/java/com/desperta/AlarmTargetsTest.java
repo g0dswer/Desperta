@@ -71,6 +71,8 @@ public class AlarmTargetsTest {
     Alarm alarm = new Alarm();
     alarm.id = 73003;
     alarm.skipUntil = 123456789L;
+    alarm.nextOverrideAt = 223456789L;
+    alarm.nextOverrideOriginalAt = 323456789L;
     alarm.label = "Código de casa";
     Alarm.Mission mission = new Alarm.Mission("barcode", "7891035002427", 1);
     mission.targets.add("7891035002427");
@@ -81,9 +83,26 @@ public class AlarmTargetsTest {
 
     assertNotEquals(alarm.id, copy.id);
     assertEquals(0, copy.skipUntil);
+    assertEquals(0, copy.nextOverrideAt);
+    assertEquals(0, copy.nextOverrideOriginalAt);
     assertEquals(alarm.label, copy.label);
     assertEquals(alarm.missions.get(0).acceptedCodes(), copy.missions.get(0).acceptedCodes());
     copy.missions.get(0).targets.add("another-code");
     assertFalse(alarm.missions.get(0).targets.contains("another-code"));
+  }
+
+  @Test
+  public void nextOverrideRoundTripsAsAnAbsoluteTimestamp() throws Exception {
+    Alarm alarm = new Alarm();
+    alarm.id = 73004;
+    alarm.nextOverrideAt = 1_789_000_000_000L;
+    alarm.nextOverrideOriginalAt = 1_789_000_060_000L;
+    alarm.skipUntil = 0L;
+
+    Alarm restored = Alarm.from(alarm.json());
+
+    assertEquals(alarm.nextOverrideAt, restored.nextOverrideAt);
+    assertEquals(alarm.nextOverrideOriginalAt, restored.nextOverrideOriginalAt);
+    assertEquals(alarm.skipUntil, restored.skipUntil);
   }
 }

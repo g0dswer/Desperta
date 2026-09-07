@@ -14,6 +14,7 @@ import android.os.ParcelFileDescriptor;
 import android.os.SystemClock;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
+import java.util.Calendar;
 import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
@@ -273,6 +274,62 @@ public class EngineFlowTest {
     }
     assertEquals(beforeVolume, audio.getStreamVolume(AudioManager.STREAM_ALARM));
     assertEquals(beforeSpeaker, audio.isSpeakerphoneOn());
+  }
+
+  @Test
+  public void actualDeliveryConsumesEarlierOverrideAndSuppressesOriginalOccurrence()
+      throws Exception {
+    assumeExactAlarms();
+    long now = System.currentTimeMillis();
+    Calendar regular = Calendar.getInstance();
+    regular.setTimeInMillis(now);
+    regular.add(Calendar.MINUTE, 10);
+    regular.set(Calendar.SECOND, 0);
+    regular.set(Calendar.MILLISECOND, 0);
+    Alarm alarm = alarm(41014);
+    alarm.hour = regular.get(Calendar.HOUR_OF_DAY);
+    alarm.minute = regular.get(Calendar.MINUTE);
+    alarm.days = 127;
+    assertTrue(Scheduler.setNextOverride(alarm, now + 1_500L, now));
+    long displaced = alarm.nextOverrideOriginalAt;
+    Store.save(context, alarm);
+    Scheduler.scheduleAt(context, alarm.id, now + 1_500L, false, false);
+
+    assertNotNull(waitForSession(alarm.id, 7_000L));
+    Alarm afterTrigger = Store.get(context, alarm.id);
+    assertNotNull(afterTrigger);
+    assertEquals(0L, afterTrigger.nextOverrideAt);
+    assertEquals(0L, afterTrigger.nextOverrideOriginalAt);
+    assertTrue(afterTrigger.skipUntil >= displaced);
+    assertTrue(Scheduler.next(afterTrigger, System.currentTimeMillis()) > displaced);
+
+    AlarmService.dismiss(context, alarm.id);
+    waitForNoSession(3_000L);
+  }
+
+  @Test
+  public void previewDoesNotConsumeOneTimeOverride() throws Exception {
+    long now = System.currentTimeMillis();
+    Alarm alarm = alarm(41015);
+    alarm.hour = 23;
+    alarm.minute = 59;
+    assertTrue(Scheduler.setNextOverride(alarm, now + 30 * 60_000L, now));
+    long override = alarm.nextOverrideAt;
+    long displaced = alarm.nextOverrideOriginalAt;
+    Store.save(context, alarm);
+
+    AlarmService.start(context, alarm.id, true);
+    assertNotNull(waitForSession(alarm.id, 4_000L));
+    Alarm duringPreview = Store.get(context, alarm.id);
+    assertNotNull(duringPreview);
+    assertEquals(override, duringPreview.nextOverrideAt);
+    assertEquals(displaced, duringPreview.nextOverrideOriginalAt);
+    AlarmService.stopPreview(context, alarm.id);
+    waitForNoSession(3_000L);
+    Alarm afterPreview = Store.get(context, alarm.id);
+    assertNotNull(afterPreview);
+    assertEquals(override, afterPreview.nextOverrideAt);
+    assertEquals(displaced, afterPreview.nextOverrideOriginalAt);
   }
 
   private Alarm alarm(int id) {
