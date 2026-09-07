@@ -29,7 +29,6 @@ import java.util.Locale;
 /** Settings screen for the free, local-first Desperta alarm app. */
 public class SettingsActivity extends Activity {
   private static final String PREFS = Weather.PREFS;
-  private static final String KEY_THEME = "theme";
   private static final String KEY_OUTPUT = "output";
   private static final int REQUEST_POST_NOTIFICATIONS = 7_402;
 
@@ -50,6 +49,7 @@ public class SettingsActivity extends Activity {
   private int pink;
   private int positive;
   private boolean dark;
+  private Identity identity;
 
   @Override
   protected void onCreate(Bundle state) {
@@ -60,6 +60,10 @@ public class SettingsActivity extends Activity {
   @Override
   protected void onResume() {
     super.onResume();
+    if (identity != null && !identity.id.equals(Identity.current(this).id)) {
+      render();
+      return;
+    }
     updateOptimizationStatuses();
     updateProtectionStatus();
   }
@@ -72,21 +76,27 @@ public class SettingsActivity extends Activity {
   }
 
   private void render() {
-    dark = isDarkTheme();
-    background = Color.parseColor(dark ? "#101A2A" : "#FAF5EC");
-    surface = Color.parseColor(dark ? "#1B2A3D" : "#FFFFFF");
-    surfaceRaised = Color.parseColor(dark ? "#263A52" : "#F1E8D8");
-    primaryText = Color.parseColor(dark ? "#FFF6E7" : "#172033");
-    secondaryText = Color.parseColor(dark ? "#ADB9C9" : "#59606F");
-    accent = Color.parseColor(dark ? "#F6B95D" : "#9C5D08");
-    pink = Color.parseColor(dark ? "#FF6B6B" : "#C84C4C");
-    positive = Color.parseColor(dark ? "#83D6A3" : "#237747");
-    configureWindow();
+    identity = Identity.current(this);
+    dark = !identity.light;
+    background = identity.bg;
+    surface = identity.surface;
+    surfaceRaised = identity.raised;
+    primaryText = identity.fg;
+    secondaryText = identity.muted;
+    accent = identity.accent;
+    pink = identity.error;
+    positive = identity.positive;
+    identity.applyWindow(this);
 
     ScrollView scroll = new ScrollView(this);
     scroll.setFillViewport(true);
-    scroll.setOnApplyWindowInsetsListener((view, insets) -> { scroll.setPadding(0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom()); return insets; });
-    scroll.setBackgroundColor(background);
+    scroll.setOnApplyWindowInsetsListener(
+        (view, insets) -> {
+          scroll.setPadding(
+              0, insets.getSystemWindowInsetTop(), 0, insets.getSystemWindowInsetBottom());
+          return insets;
+        });
+    scroll.setBackground(identity.background(this));
 
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
@@ -119,7 +129,7 @@ public class SettingsActivity extends Activity {
     root.addView(sectionTitle("Preferências"));
     LinearLayout preferences = card();
     preferences.addView(
-        row("Tema", themeName(), "Escolha como a tela deve aparecer", v -> chooseTheme()));
+        row("Identidade", identity.name, identity.description(), v -> chooseIdentity()));
     preferences.addView(divider());
     preferences.addView(
         row(
@@ -210,6 +220,7 @@ public class SettingsActivity extends Activity {
         lp(0, 0, 0, 0));
 
     setContentView(scroll);
+    identity.applyTree(scroll);
     updateOptimizationStatuses();
     updateProtectionStatus();
     updateWeatherText();
@@ -254,7 +265,7 @@ public class SettingsActivity extends Activity {
     cityInput.setTextColor(primaryText);
     cityInput.setTextSize(16);
     cityInput.setPadding(dp(14), 0, dp(14), 0);
-    cityInput.setBackground(roundBackground(surfaceRaised, 12));
+    cityInput.setBackground(identity.secondary(this));
     cityInput.setText(Weather.getCity(this));
     inputRow.addView(cityInput, new LinearLayout.LayoutParams(0, dp(50), 1f));
 
@@ -300,6 +311,7 @@ public class SettingsActivity extends Activity {
     actions.setGravity(Gravity.CENTER_VERTICAL);
     Button enable = button("Ativar proteção", true);
     enable.setBackground(roundBackground(pink, 14));
+    enable.setTextColor(readableTextColor(pink));
     enable.setOnClickListener(v -> ProtectionAdmin.requestActivation(this));
     actions.addView(enable, new LinearLayout.LayoutParams(0, dp(48), 1f));
     Button remove = button("Remover", false);
@@ -380,6 +392,7 @@ public class SettingsActivity extends Activity {
     view.setTextSize(size);
     view.setTextColor(color);
     view.setTypeface(Typeface.DEFAULT, style);
+    identity.styleText(view, size >= 20);
     view.setGravity(Gravity.CENTER_VERTICAL);
     view.setPadding(left, top, right, bottom);
     return view;
@@ -391,11 +404,11 @@ public class SettingsActivity extends Activity {
     button.setTextSize(14);
     button.setAllCaps(false);
     button.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    button.setTextColor(filled ? Color.parseColor("#172033") : primaryText);
+    button.setTextColor(filled ? identity.onAccent : primaryText);
     button.setMinHeight(0);
     button.setMinWidth(0);
     button.setPadding(dp(12), 0, dp(12), 0);
-    button.setBackground(roundBackground(filled ? accent : surfaceRaised, 14));
+    button.setBackground(filled ? identity.primary(this) : identity.secondary(this));
     return button;
   }
 
@@ -403,14 +416,15 @@ public class SettingsActivity extends Activity {
     LinearLayout card = new LinearLayout(this);
     card.setOrientation(LinearLayout.VERTICAL);
     card.setPadding(dp(16), dp(12), dp(16), dp(14));
-    card.setBackground(roundBackground(surface, 20));
+    card.setBackground(identity.panel(this));
     return card;
   }
 
   private View divider() {
     View divider = new View(this);
-    divider.setBackgroundColor(dark ? Color.parseColor("#2C2C31") : Color.parseColor("#E4E4E8"));
-    divider.setLayoutParams(new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
+    divider.setBackgroundColor(identity.muted);
+    divider.setLayoutParams(
+        new LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(1)));
     return divider;
   }
 
@@ -419,6 +433,24 @@ public class SettingsActivity extends Activity {
     drawable.setColor(color);
     drawable.setCornerRadius(dp(radiusDp));
     return drawable;
+  }
+
+  private int readableTextColor(int backgroundColor) {
+    double luminance = relativeLuminance(backgroundColor);
+    double blackContrast = (luminance + 0.05d) / 0.05d;
+    double whiteContrast = 1.05d / (luminance + 0.05d);
+    return blackContrast >= whiteContrast ? Color.BLACK : Color.WHITE;
+  }
+
+  private double relativeLuminance(int color) {
+    double red = linearChannel(Color.red(color) / 255d);
+    double green = linearChannel(Color.green(color) / 255d);
+    double blue = linearChannel(Color.blue(color) / 255d);
+    return 0.2126d * red + 0.7152d * green + 0.0722d * blue;
+  }
+
+  private double linearChannel(double channel) {
+    return channel <= 0.03928d ? channel / 12.92d : Math.pow((channel + 0.055d) / 1.055d, 2.4d);
   }
 
   private LinearLayout.LayoutParams lp(int left, int top, int right, int bottom) {
@@ -433,45 +465,26 @@ public class SettingsActivity extends Activity {
     return Math.round(value * getResources().getDisplayMetrics().density);
   }
 
-  private boolean isDarkTheme() {
-    String value = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_THEME, "dark");
-    if ("light".equals(value)) return false;
-    if ("system".equals(value)) {
-      int mode =
-          getResources().getConfiguration().uiMode
-              & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-      return mode == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-    }
-    return true;
-  }
-
-  private String themeName() {
-    String value = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_THEME, "dark");
-    if ("light".equals(value)) return "Claro";
-    if ("system".equals(value)) return "Sistema";
-    return "Escuro";
-  }
-
   private String outputName() {
     String value = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_OUTPUT, "device");
     return "speaker".equals(value) ? "Alto-falante" : "Dispositivo atual";
   }
 
-  private void chooseTheme() {
-    String current = getSharedPreferences(PREFS, MODE_PRIVATE).getString(KEY_THEME, "dark");
-    String[] keys = {"dark", "light", "system"};
-    String[] labels = {"Escuro", "Claro", "Sistema"};
-    int selected = indexOf(keys, current);
-    new android.app.AlertDialog.Builder(this)
-        .setTitle("Tema")
+  private void chooseIdentity() {
+    Identity selectedIdentity = Identity.current(this);
+    int selected = indexOf(Identity.IDS, selectedIdentity.id);
+    String[] choices = new String[Identity.NAMES.length];
+    for (int i = 0; i < choices.length; i++) {
+      choices[i] = Identity.NAMES[i] + "\n" + Identity.DESCRIPTIONS[i];
+    }
+    selectedIdentity
+        .dialog(this)
+        .setTitle("Identidade visual")
         .setSingleChoiceItems(
-            labels,
+            choices,
             selected,
             (dialog, which) -> {
-              getSharedPreferences(PREFS, MODE_PRIVATE)
-                  .edit()
-                  .putString(KEY_THEME, keys[which])
-                  .apply();
+              Identity.set(this, Identity.IDS[which]);
               dialog.dismiss();
               render();
             })
@@ -484,7 +497,8 @@ public class SettingsActivity extends Activity {
     String[] keys = {"device", "speaker"};
     String[] labels = {"Dispositivo atual", "Alto-falante"};
     int selected = indexOf(keys, current);
-    new android.app.AlertDialog.Builder(this)
+    identity
+        .dialog(this)
         .setTitle("Saída de som")
         .setSingleChoiceItems(
             labels,
@@ -548,7 +562,7 @@ public class SettingsActivity extends Activity {
 
   private void setStatus(TextView view, boolean okay) {
     view.setText(okay ? "Pronto" : "Revisar");
-    view.setTextColor(okay ? positive : Color.parseColor(dark ? "#FFC857" : "#A35A00"));
+    view.setTextColor(okay ? positive : identity.error);
   }
 
   private boolean exactAlarmsAllowed() {
@@ -641,13 +655,6 @@ public class SettingsActivity extends Activity {
   }
 
   private void configureWindow() {
-    getWindow().setStatusBarColor(background);
-    getWindow().setNavigationBarColor(background);
-    int flags = 0;
-    if (!dark) flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-    if (!dark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-    }
-    getWindow().getDecorView().setSystemUiVisibility(flags);
+    identity.applyWindow(this);
   }
 }

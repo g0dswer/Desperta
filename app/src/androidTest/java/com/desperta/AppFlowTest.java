@@ -75,7 +75,7 @@ public class AppFlowTest {
 
   @Test
   public void createEditPersistDuplicateSkipDeleteAndUndo() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     desc("Nome do alarme:");
     text("Teste manhã");
     click("Confirmar");
@@ -103,7 +103,7 @@ public class AppFlowTest {
 
   @Test
   public void editorMissionAndCollapsedOptionsPersist() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     assertFalse(ui.findObject(new UiSelector().text("Falar a hora")).exists());
     desc("Como desligar,");
     addMath("4");
@@ -123,7 +123,7 @@ public class AppFlowTest {
 
   @Test
   public void discardDoesNotCreateAlarm() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     ui.pressBack();
     click("Descartar");
     assertTrue(Store.all(c).isEmpty());
@@ -139,7 +139,7 @@ public class AppFlowTest {
 
   @Test
   public void allAlarmSwitchesSnoozeWallpaperAndMissionLimitPersist() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     desc("Domingo");
     desc("Som,");
     new UiScrollable(new UiSelector().className("android.widget.ScrollView").scrollable(true))
@@ -188,7 +188,7 @@ public class AppFlowTest {
 
   @Test
   public void enableSwitchPersistsBothDirections() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     click("Salvar alarme");
     desc("Ativar Bom dia");
     assertFalse(Store.all(c).get(0).enabled);
@@ -198,7 +198,7 @@ public class AppFlowTest {
 
   @Test
   public void presetsAndMissionReorderingSurviveRecreation() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     click("Repetir · Todos os dias  ›");
     click("Dias úteis");
     desc("Como desligar,");
@@ -223,7 +223,7 @@ public class AppFlowTest {
 
   @Test
   public void tryingCandidateDoesNotAddItUntilConfirmed() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     desc("Como desligar,");
     click("+ Adicionar missão");
     click("Digitação");
@@ -261,7 +261,7 @@ public class AppFlowTest {
 
   @Test
   public void nextOnlyEditPreservesWeeklyClockAndCanBeUndone() throws Exception {
-    click("+ Alarme");
+    desc("Adicionar alarme");
     click("Salvar alarme");
     desc("Mais opções de Bom dia");
     click("Só na próxima vez");

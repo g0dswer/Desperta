@@ -83,15 +83,6 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private static final int CAMERA_SQUAT = 3;
   private static final int HASH_SIZE = 8;
 
-  private static final int BG = Color.rgb(16, 26, 42);
-  private static final int CARD = Color.rgb(27, 42, 61);
-  private static final int CARD_ALT = Color.rgb(36, 57, 79);
-  private static final int WHITE = Color.rgb(255, 246, 231);
-  private static final int MUTED = Color.rgb(173, 185, 201);
-  private static final int PRIMARY = Color.rgb(246, 185, 93);
-  private static final int PRIMARY_TEXT = Color.rgb(23, 32, 51);
-  private static final int CYAN = Color.rgb(246, 185, 93);
-
   private static final int[] COLOR_VALUES = {
     Color.rgb(245, 72, 78), Color.rgb(255, 155, 54), Color.rgb(255, 216, 74),
     Color.rgb(75, 207, 103), Color.rgb(52, 189, 224), Color.rgb(82, 111, 236),
@@ -158,10 +149,12 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private Runnable rhythmPulse;
   private ImageLabeler imageLabeler;
   private PoseDetector poseDetector;
+  private Identity theme;
 
   @Override
   protected void onCreate(Bundle savedInstanceState) {
     super.onCreate(savedInstanceState);
+    theme = Identity.current(this);
     configureWindow();
 
     Intent launch = getIntent();
@@ -190,17 +183,17 @@ public class MissionActivity extends Activity implements SensorEventListener {
     if (savedInstanceState != null) restoreState(savedInstanceState);
     buildShell();
     configureMission();
+    // The identity also styles controls added dynamically by each mission type. Existing mission
+    // backgrounds, such as the color challenge tiles, are intentionally preserved by the theme.
+    theme.applyTree(findViewById(android.R.id.content));
     if (savedInstanceState != null && savedInstanceState.containsKey("feedback"))
       setStatus(savedInstanceState.getString("feedback", ""));
   }
 
   private void configureWindow() {
+    if (theme == null) theme = Identity.current(this);
+    theme.applyWindow(this);
     Window window = getWindow();
-    window.setStatusBarColor(Color.BLACK);
-    window.setNavigationBarColor(Color.BLACK);
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-      window.getDecorView().setSystemUiVisibility(0);
-    }
     window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
   }
 
@@ -240,7 +233,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private void buildShell() {
     ScrollView scroll = new ScrollView(this);
     scroll.setFillViewport(true);
-    scroll.setBackgroundColor(BG);
+    scroll.setBackground(theme.background(this));
 
     LinearLayout outer = new LinearLayout(this);
     outer.setOrientation(LinearLayout.VERTICAL);
@@ -252,34 +245,35 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
     LinearLayout toolbar = new LinearLayout(this);
     toolbar.setGravity(Gravity.CENTER_VERTICAL);
-    TextView close = label("×", 36, WHITE);
+    TextView close = label("×", 36, theme.fg);
     close.setGravity(Gravity.CENTER);
     close.setContentDescription("Fechar missão");
     close.setOnClickListener(v -> cancelMission());
     toolbar.addView(close, new LinearLayout.LayoutParams(dp(48), dp(48)));
-    titleView = label("Missão do despertador", 22, WHITE);
+    titleView = label("Missão do despertador", 22, theme.fg);
+    theme.styleText(titleView, true);
     titleView.setGravity(Gravity.CENTER);
     toolbar.addView(titleView, new LinearLayout.LayoutParams(0, dp(48), 1));
-    TextView spacer = label("", 22, WHITE);
+    TextView spacer = label("", 22, theme.fg);
     toolbar.addView(spacer, new LinearLayout.LayoutParams(dp(48), dp(48)));
     outer.addView(toolbar);
 
     LinearLayout card = new LinearLayout(this);
     card.setOrientation(LinearLayout.VERTICAL);
     card.setPadding(dp(20), dp(20), dp(20), dp(20));
-    card.setBackground(round(CARD, 28));
+    card.setBackground(theme.panel(this));
     outer.addView(
         card,
         marginParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, 12, 0, 0));
 
-    promptView = label("Complete a missão para desligar o alarme.", 18, WHITE);
+    promptView = label("Complete a missão para desligar o alarme.", 18, theme.fg);
     promptView.setGravity(Gravity.CENTER_HORIZONTAL);
     card.addView(
         promptView,
         marginParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0, 0, 12));
-    progressView = label("", 14, MUTED);
+    progressView = label("", 14, theme.muted);
     progressView.setGravity(Gravity.CENTER_HORIZONTAL);
     card.addView(
         progressView,
@@ -287,7 +281,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, 0, 0, 12));
     content = card;
 
-    statusView = label("", 15, MUTED);
+    statusView = label("", 15, theme.muted);
     statusView.setGravity(Gravity.CENTER);
     outer.addView(
         statusView,
@@ -325,7 +319,9 @@ public class MissionActivity extends Activity implements SensorEventListener {
                 ? "Cadastre o código que você usará para desligar este alarme."
                 : "Escaneie um dos códigos escolhidos para desligar o alarme.");
         addPrimaryButton("Escanear código", v -> launchBarcodeScanner());
-        setStatus("A leitura acontece dentro do retângulo e permanece aberta se o código não for aceito.");
+        setStatus(
+            "A leitura acontece dentro do retângulo e permanece aberta se o código não for"
+                + " aceito.");
         if (!restored) mainHandler.postDelayed(this::launchBarcodeScanner, 300L);
         break;
       case "photo":
@@ -376,7 +372,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
         String spokenTarget = rhythmWord();
         promptView.setText("Diga “" + spokenTarget + "” no ritmo de " + rhythmBpm() + " BPM.");
         addPrimaryButton("Iniciar microfone", v -> startRhythm());
-        rhythmBeatView = label("●  Ritmo: " + rhythmBpm() + " BPM", 15, CYAN);
+        rhythmBeatView = label("●  Ritmo: " + rhythmBpm() + " BPM", 15, theme.accent);
         rhythmBeatView.setGravity(Gravity.CENTER);
         content.addView(
             rhythmBeatView, marginParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(40), 0, 10, 0, 0));
@@ -386,7 +382,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
       case "typing":
         if (target == null || target.isEmpty()) target = "DESPERTA";
         promptView.setText("Digite exatamente o texto mostrado abaixo.");
-        typingTargetView = label("Texto a digitar: " + target, 20, CYAN);
+        typingTargetView = label("Texto a digitar: " + target, 20, theme.accent);
         typingTargetView.setGravity(Gravity.CENTER);
         content.addView(
             typingTargetView,
@@ -410,7 +406,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
         break;
       default:
         promptView.setText("Este tipo de missão não está disponível neste aparelho.");
-        setStatus("Não há um fluxo de conclusão habilitado para esta missão.");
+        setErrorStatus("Não há um fluxo de conclusão habilitado para esta missão.");
         break;
     }
   }
@@ -437,10 +433,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
   private void addPrimaryButton(String text, View.OnClickListener listener) {
     primaryButton = new Button(this);
     primaryButton.setText(text);
-    primaryButton.setTextColor(PRIMARY_TEXT);
+    primaryButton.setTextColor(theme.onAccent);
     primaryButton.setTextSize(16);
     primaryButton.setAllCaps(false);
-    primaryButton.setBackground(round(PRIMARY, 20));
+    primaryButton.setBackground(theme.primary(this));
     primaryButton.setOnClickListener(listener);
     content.addView(
         primaryButton, marginParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54), 0, 14, 0, 0));
@@ -448,13 +444,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private void addInputAndSubmit(String hint, String buttonText, View.OnClickListener listener) {
     input = new EditText(this);
-    input.setTextColor(WHITE);
-    input.setHintTextColor(MUTED);
+    input.setTextColor(theme.fg);
+    input.setHintTextColor(theme.muted);
     input.setHint(hint);
     input.setTextSize(18);
     input.setSingleLine(true);
     input.setPadding(dp(16), 0, dp(16), 0);
-    input.setBackground(round(CARD_ALT, 14));
+    input.setBackground(theme.secondary(this));
     content.addView(input, marginParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(54), 0, 14, 0, 0));
     addPrimaryButton(buttonText, listener);
   }
@@ -464,7 +460,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
       acceptOneProgress();
       if (input != null) input.setText("");
     } else {
-      setStatus("O texto precisa ser exatamente igual.");
+      setErrorStatus("O texto precisa ser exatamente igual.");
     }
   }
 
@@ -504,7 +500,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
       }
       if (input != null) input.setText("");
     } else {
-      setStatus("Essa resposta não está correta. Tente novamente.");
+      setErrorStatus("Essa resposta não está correta. Tente novamente.");
     }
   }
 
@@ -524,7 +520,8 @@ public class MissionActivity extends Activity implements SensorEventListener {
     grid.setUseDefaultMargins(true);
     for (int i = 0; i < COLOR_VALUES.length; i++) {
       final int color = COLOR_VALUES[i];
-      TextView tile = label(COLOR_DISPLAY_NAMES[i].toUpperCase(Locale.ROOT), 15, Color.WHITE);
+      TextView tile =
+          label(COLOR_DISPLAY_NAMES[i].toUpperCase(Locale.ROOT), 15, colorTileTextColor(color));
       tile.setGravity(Gravity.CENTER);
       tile.setBackground(round(color, 18));
       tile.setContentDescription("Bloco da cor " + COLOR_DISPLAY_NAMES[i]);
@@ -538,7 +535,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
                 setupColorRound();
               }
             } else {
-              setStatus("Esse bloco não tem a cor solicitada.");
+              setErrorStatus("Esse bloco não tem a cor solicitada.");
             }
           });
       GridLayout.LayoutParams params = new GridLayout.LayoutParams();
@@ -553,6 +550,24 @@ public class MissionActivity extends Activity implements SensorEventListener {
         grid,
         marginParams(
             ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT, 0, 14, 0, 0));
+  }
+
+  private int colorTileTextColor(int backgroundColor) {
+    double luminance = relativeLuminance(backgroundColor);
+    double blackContrast = (luminance + 0.05d) / 0.05d;
+    double whiteContrast = 1.05d / (luminance + 0.05d);
+    return blackContrast >= whiteContrast ? Color.BLACK : Color.WHITE;
+  }
+
+  private double relativeLuminance(int color) {
+    double red = linearChannel(Color.red(color) / 255d);
+    double green = linearChannel(Color.green(color) / 255d);
+    double blue = linearChannel(Color.blue(color) / 255d);
+    return 0.2126d * red + 0.7152d * green + 0.0722d * blue;
+  }
+
+  private double linearChannel(double channel) {
+    return channel <= 0.03928d ? channel / 12.92d : Math.pow((channel + 0.055d) / 1.055d, 2.4d);
   }
 
   private String displayColorName(String internalName) {
@@ -573,12 +588,10 @@ public class MissionActivity extends Activity implements SensorEventListener {
             : "Escaneie o código de barras registrado");
     integrator
         .addExtra(AlarmCaptureActivity.EXTRA_REGISTER_MODE, isRegisterMode())
-        .addExtra(
-            AlarmCaptureActivity.EXTRA_EXPECTED_TARGET, target == null ? "" : target)
+        .addExtra(AlarmCaptureActivity.EXTRA_EXPECTED_TARGET, target == null ? "" : target)
         // IntentIntegrator forwards String[] extras; an ArrayList would be converted to one
         // toString() value by its compatibility adapter and lose the multi-code selection.
-        .addExtra(
-            AlarmCaptureActivity.EXTRA_EXPECTED_TARGETS, targets.toArray(new String[0]));
+        .addExtra(AlarmCaptureActivity.EXTRA_EXPECTED_TARGETS, targets.toArray(new String[0]));
     integrator.setBeepEnabled(true);
     // Keep the embedded scanner's calibrated landscape camera surface. The custom activity adds
     // lock-screen flags without changing the decode geometry used by the device camera pipeline.
@@ -588,7 +601,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
       integrator.initiateScan();
     } catch (RuntimeException error) {
       scannerPending = false;
-      setStatus("O scanner de código de barras não pôde ser aberto neste aparelho.");
+      setErrorStatus("O scanner de código de barras não pôde ser aberto neste aparelho.");
     }
   }
 
@@ -607,7 +620,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     if (cameraPending || finishing) return;
     Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
     if (camera.resolveActivity(getPackageManager()) == null) {
-      setStatus("Não há um aplicativo de câmera disponível neste aparelho.");
+      setErrorStatus("Não há um aplicativo de câmera disponível neste aparelho.");
       return;
     }
     pendingCameraPurpose = purpose;
@@ -616,13 +629,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
       startActivityForResult(camera, REQUEST_CAMERA);
     } catch (RuntimeException error) {
       cameraPending = false;
-      setStatus("A câmera não pôde ser aberta.");
+      setErrorStatus("A câmera não pôde ser aberta.");
     }
   }
 
   private void handleBarcodeResult(String contents) {
     if (contents == null || contents.trim().isEmpty()) {
-      setStatus("Nenhum código foi lido. Tente novamente.");
+      setErrorStatus("Nenhum código foi lido. Tente novamente.");
       return;
     }
     if (isRegisterMode()) {
@@ -630,13 +643,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
     } else if (matchesAnyBarcode(contents)) {
       completeMission(null);
     } else {
-      setStatus("Código lido, mas ele não está selecionado. Tente outro.");
+      setErrorStatus("Código lido, mas ele não está selecionado. Tente outro.");
     }
   }
 
   private void handleCapturedBitmap(Bitmap bitmap) {
     if (bitmap == null || bitmap.getWidth() < 2 || bitmap.getHeight() < 2) {
-      setStatus("A câmera não retornou uma imagem utilizável. Tente novamente.");
+      setErrorStatus("A câmera não retornou uma imagem utilizável. Tente novamente.");
       return;
     }
     if (pendingCameraPurpose == CAMERA_PHOTO) {
@@ -650,13 +663,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private void handlePhoto(Bitmap bitmap) {
     if (!hasMeaningfulPhotoDetail(bitmap)) {
-      setStatus("A imagem está uniforme demais. Fotografe um objeto ou cenário com detalhes.");
+      setErrorStatus("A imagem está uniforme demais. Fotografe um objeto ou cenário com detalhes.");
       return;
     }
     if (isRegisterMode()) {
       File saved = savePrivatePhoto(bitmap);
       if (saved == null) {
-        setStatus("A foto não pôde ser salva de forma privada.");
+        setErrorStatus("A foto não pôde ser salva de forma privada.");
       } else {
         completeMission(saved.getAbsolutePath());
       }
@@ -664,12 +677,12 @@ public class MissionActivity extends Activity implements SensorEventListener {
     }
     File registered = target == null ? null : new File(target);
     if (registered == null || !registered.isFile()) {
-      setStatus("A foto registrada não está disponível neste aparelho.");
+      setErrorStatus("A foto registrada não está disponível neste aparelho.");
       return;
     }
     Bitmap expected = android.graphics.BitmapFactory.decodeFile(registered.getAbsolutePath());
     if (expected == null) {
-      setStatus("A foto registrada não pôde ser lida.");
+      setErrorStatus("A foto registrada não pôde ser lida.");
       return;
     }
     boolean match = MissionLogic.photoMatches(bitmapHash(expected), bitmapHash(bitmap));
@@ -677,13 +690,13 @@ public class MissionActivity extends Activity implements SensorEventListener {
     if (match) {
       completeMission(null);
     } else {
-      setStatus("A foto não corresponde à imagem registrada. Tente novamente.");
+      setErrorStatus("A foto não corresponde à imagem registrada. Tente novamente.");
     }
   }
 
   private void handleObject(Bitmap bitmap) {
     if (imageLabeler == null) {
-      setStatus("O reconhecimento de objetos não está disponível neste aparelho.");
+      setErrorStatus("O reconhecimento de objetos não está disponível neste aparelho.");
       return;
     }
     imageLabeler
@@ -692,7 +705,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
             labels -> {
               ImageLabel best = bestLabel(labels);
               if (best == null) {
-                setStatus(
+                setErrorStatus(
                     "Nenhum objeto reconhecível foi encontrado. Aproxime-se e melhore a"
                         + " iluminação.");
                 return;
@@ -702,11 +715,12 @@ public class MissionActivity extends Activity implements SensorEventListener {
               } else if (MissionLogic.labelMatches(target, best.getText())) {
                 completeMission(null);
               } else {
-                setStatus("Detectado “" + best.getText() + "”, mas não é o objeto registrado.");
+                setErrorStatus(
+                    "Detectado “" + best.getText() + "”, mas não é o objeto registrado.");
               }
             })
         .addOnFailureListener(
-            error -> setStatus("O reconhecimento do objeto falhou. Tente novamente."));
+            error -> setErrorStatus("O reconhecimento do objeto falhou. Tente novamente."));
   }
 
   private ImageLabel bestLabel(List<ImageLabel> labels) {
@@ -721,7 +735,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private void handleSquat(Bitmap bitmap) {
     if (poseDetector == null) {
-      setStatus("O reconhecimento de pose não está disponível neste aparelho.");
+      setErrorStatus("O reconhecimento de pose não está disponível neste aparelho.");
       return;
     }
     poseDetector
@@ -730,7 +744,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
             pose -> {
               Float angle = kneeAngle(pose);
               if (angle == null) {
-                setStatus(
+                setErrorStatus(
                     "A pose do corpo inteiro não foi detectada. Afaste-se e tente novamente.");
                 return;
               }
@@ -763,7 +777,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
               }
             })
         .addOnFailureListener(
-            error -> setStatus("O reconhecimento de pose falhou. Tente novamente."));
+            error -> setErrorStatus("O reconhecimento de pose falhou. Tente novamente."));
   }
 
   private Float kneeAngle(Pose pose) {
@@ -818,12 +832,12 @@ public class MissionActivity extends Activity implements SensorEventListener {
     if (sensorManager == null) sensorManager = (SensorManager) getSystemService(SENSOR_SERVICE);
     Sensor sensor = sensorManager == null ? null : sensorManager.getDefaultSensor(sensorType);
     if (sensor == null) {
-      setStatus("Este aparelho não oferece o sensor necessário.");
+      setErrorStatus("Este aparelho não oferece o sensor necessário.");
       return;
     }
     sensorWanted = true;
     sensorActive = sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
-    if (!sensorActive) setStatus("O sensor não pôde ser iniciado.");
+    if (!sensorActive) setErrorStatus("O sensor não pôde ser iniciado.");
     else setStatus("Sensor ativo. Continue até o contador atingir o alvo.");
   }
 
@@ -854,7 +868,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
 
   private void startRhythm() {
     if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-      setStatus("O reconhecimento de voz não está disponível neste aparelho.");
+      setErrorStatus("O reconhecimento de voz não está disponível neste aparelho.");
       return;
     }
     if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
@@ -918,7 +932,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     try {
       speechRecognizer.startListening(recognize);
     } catch (RuntimeException error) {
-      setStatus("O microfone não pôde ser iniciado.");
+      setErrorStatus("O microfone não pôde ser iniciado.");
     }
   }
 
@@ -935,7 +949,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     for (String phrase : heard) {
       if (!MissionLogic.spokenWordMatches(rhythmWord(), phrase)) continue;
       if (!isOnRhythmBeat(spokenAt)) {
-        setStatus("A palavra foi ouvida, mas fora do ritmo solicitado.");
+        setErrorStatus("A palavra foi ouvida, mas fora do ritmo solicitado.");
         break;
       }
       if (lastSpeechMatch < 0L || spokenAt - lastSpeechMatch >= 350L) {
@@ -970,7 +984,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
                 rhythmStartAt < 0L ? 0L : android.os.SystemClock.elapsedRealtime() - rhythmStartAt;
             boolean beat = ((elapsed / period) % 2L) == 0L;
             rhythmBeatView.setText(beat ? "●  BATA" : "○  aguarde");
-            rhythmBeatView.setTextColor(beat ? CYAN : MUTED);
+            rhythmBeatView.setTextColor(beat ? theme.accent : theme.muted);
             mainHandler.postDelayed(this, Math.max(80L, period / 2L));
           }
         };
@@ -1044,8 +1058,19 @@ public class MissionActivity extends Activity implements SensorEventListener {
   }
 
   private void setStatus(String status) {
+    setStatus(status, theme == null ? Color.WHITE : theme.muted);
+  }
+
+  private void setErrorStatus(String status) {
+    setStatus(status, theme == null ? Color.WHITE : theme.error);
+  }
+
+  private void setStatus(String status, int color) {
     lastStatus = status == null ? "" : status;
-    if (statusView != null) statusView.setText(lastStatus);
+    if (statusView != null) {
+      statusView.setText(lastStatus);
+      statusView.setTextColor(color);
+    }
   }
 
   private File savePrivatePhoto(Bitmap bitmap) {
@@ -1184,7 +1209,7 @@ public class MissionActivity extends Activity implements SensorEventListener {
     boolean granted =
         grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED;
     if (!granted) {
-      setStatus(permissionMessages.get(requestCode) + " A missão continua pendente.");
+      setErrorStatus(permissionMessages.get(requestCode) + " A missão continua pendente.");
       return;
     }
     if (requestCode == REQUEST_CAMERA_PERMISSION) launchCamera(pendingCameraPurpose);
@@ -1195,6 +1220,15 @@ public class MissionActivity extends Activity implements SensorEventListener {
   @Override
   @SuppressWarnings("deprecation")
   protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+    if (requestCode == IntentIntegrator.REQUEST_CODE && data == null) {
+      scannerPending = false;
+      if (resultCode == RESULT_OK) {
+        setErrorStatus("A leitura não retornou um código. Tente novamente.");
+      } else {
+        setStatus("Leitura cancelada. A missão continua pendente.");
+      }
+      return;
+    }
     IntentResult barcode = IntentIntegrator.parseActivityResult(requestCode, resultCode, data);
     if (barcode != null) {
       scannerPending = false;

@@ -2,7 +2,6 @@ package com.desperta;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.view.View;
@@ -21,6 +20,7 @@ public final class BarcodeFinderView extends View {
 
   private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
   private final RectF frame = new RectF();
+  private final Identity theme;
   private FrameListener frameListener;
   private int frameWidth;
   private int frameHeight;
@@ -28,6 +28,7 @@ public final class BarcodeFinderView extends View {
 
   public BarcodeFinderView(Context context) {
     super(context);
+    theme = Identity.current(context);
     setWillNotDraw(false);
     setImportantForAccessibility(IMPORTANT_FOR_ACCESSIBILITY_NO);
   }
@@ -76,11 +77,11 @@ public final class BarcodeFinderView extends View {
     paint.setStyle(Paint.Style.STROKE);
     paint.setStrokeWidth(dp(4));
     if (feedbackState == FeedbackState.SUCCESS) {
-      paint.setColor(Color.rgb(132, 213, 176));
+      paint.setColor(theme.positive);
     } else if (feedbackState == FeedbackState.ERROR) {
-      paint.setColor(Color.rgb(255, 173, 176));
+      paint.setColor(theme.error);
     } else {
-      paint.setColor(Color.rgb(246, 185, 93));
+      paint.setColor(theme.accent);
     }
     canvas.drawRoundRect(frame, dp(6), dp(6), paint);
   }

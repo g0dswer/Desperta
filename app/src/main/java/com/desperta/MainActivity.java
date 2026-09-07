@@ -4,6 +4,7 @@ import android.app.*;
 import android.content.*;
 import android.graphics.Color;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
 import android.os.*;
@@ -13,6 +14,7 @@ import java.util.*;
 import org.json.*;
 
 public class MainActivity extends Activity {
+  Identity identity;
   int bg, card, fg, muted, accent, tint;
   boolean light;
   ScrollView scroll;
@@ -53,6 +55,7 @@ public class MainActivity extends Activity {
   @Override
   public void onCreate(Bundle b) {
     super.onCreate(b);
+    if (Build.VERSION.SDK_INT >= 30) getWindow().setDecorFitsSystemWindows(false);
     if (b != null && b.containsKey("draft"))
       try {
         draft = Alarm.from(new JSONObject(b.getString("draft")));
@@ -124,7 +127,12 @@ public class MainActivity extends Activity {
     return (int) (n * getResources().getDisplayMetrics().density);
   }
 
-  GradientDrawable shape(int color, int radius) {
+  Drawable shape(int color, int radius) {
+    if (identity != null) {
+      if (color == accent) return identity.primary(this);
+      if (color == card) return identity.panel(this);
+      if (color == tint) return identity.secondary(this);
+    }
     GradientDrawable s = new GradientDrawable();
     s.setColor(color);
     s.setCornerRadius(d(radius));
@@ -134,6 +142,7 @@ public class MainActivity extends Activity {
   TextView text(String s, int size, int color) {
     TextView t = new TextView(this);
     t.setText(s);
+    if (identity != null) identity.styleText(t, false);
     t.setTextSize(size);
     t.setTextColor(color);
     t.setPadding(0, d(6), 0, d(6));
@@ -143,6 +152,7 @@ public class MainActivity extends Activity {
   Button button(String s, Runnable run) {
     Button b = new Button(this);
     b.setText(s);
+    if (identity != null) identity.styleText(b, false);
     b.setTextColor(fg);
     b.setAllCaps(false);
     b.setTextSize(16);
@@ -173,7 +183,11 @@ public class MainActivity extends Activity {
     l.setPadding(d(18), d(12), d(18), d(12));
     l.setBackground(shape(card, 20));
     LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, -2);
-    p.setMargins(0, d(12), 0, d(12));
+    p.setMargins(
+        0,
+        d(draft == null ? (identity.isTerminal() ? 14 : 4) : 12),
+        0,
+        d(draft == null ? (identity.isTerminal() ? 14 : 5) : 12));
     body.addView(l, p);
     return l;
   }
@@ -182,38 +196,50 @@ public class MainActivity extends Activity {
     int previousY =
         draft != null && draft.id == renderedDraftId && scroll != null ? scroll.getScrollY() : 0;
     renderedDraftId = draft == null ? -1 : draft.id;
-    light = Store.prefs(this).getString("theme", "dark").equals("light");
-    if (Store.prefs(this).getString("theme", "dark").equals("system"))
-      light = (getResources().getConfiguration().uiMode & 48) == 16;
-    bg = Color.parseColor(light ? "#FAF5EC" : "#101A2A");
-    card = Color.parseColor(light ? "#FFFFFF" : "#1B2A3D");
-    fg = Color.parseColor(light ? "#172033" : "#FFF6E7");
-    muted = Color.parseColor(light ? "#596579" : "#ADB9C9");
-    accent = Color.parseColor(light ? "#925507" : "#F6B95D");
-    tint = Color.parseColor(light ? "#F3E7D2" : "#33404D");
-    getWindow().setStatusBarColor(bg);
-    getWindow().setNavigationBarColor(bg);
-    getWindow()
-        .getDecorView()
-        .setSystemUiVisibility(
-            light
-                ? View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR | View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
-                : 0);
+    identity = Identity.current(this);
+    light = identity.light;
+    bg = identity.bg;
+    card = identity.surface;
+    fg = identity.fg;
+    muted = identity.muted;
+    accent = identity.accent;
+    tint = identity.raised;
+    identity.applyWindow(this);
     page = new LinearLayout(this);
     page.setOrientation(LinearLayout.VERTICAL);
-    page.setBackgroundColor(bg);
-    page.setPadding(d(20), d(8), d(20), d(8));
+    page.setBackground(identity.background(this));
+    final int edge =
+        draft == null
+            ? ((identity.isRetro() || identity.isNineties()) ? 8 : identity.isTerminal() ? 22 : 20)
+            : 16;
+    page.setPadding(d(edge), d(8), d(edge), d(8));
     page.setOnApplyWindowInsetsListener(
         (v, in) -> {
           v.setPadding(
-              d(20),
-              in.getSystemWindowInsetTop() + d(8),
-              d(20),
-              in.getSystemWindowInsetBottom() + d(8));
+              d(edge),
+              Math.max(
+                  0,
+                  in.getSystemWindowInsetTop()
+                      + d(
+                          draft == null
+                              ? (identity.isRetro() ? -6 : identity.isNineties() ? -12 : 8)
+                              : 8)),
+              d(edge),
+              Math.max(
+                  0,
+                  in.getSystemWindowInsetBottom()
+                      + d(
+                          draft == null
+                              ? (identity.isRetro()
+                                  ? -10
+                                  : identity.isNineties() ? -9 : identity.isTerminal() ? -8 : 9)
+                              : 8)));
           return in;
         });
     setContentView(page);
     scroll = new ScrollView(this);
+    scroll.setDefaultFocusHighlightEnabled(false);
+    scroll.setVerticalScrollBarEnabled(draft != null);
     scroll.setFillViewport(true);
     scroll.setClipToPadding(false);
     body = new LinearLayout(this);
@@ -223,26 +249,11 @@ public class MainActivity extends Activity {
     page.addView(scroll, new LinearLayout.LayoutParams(-1, 0, 1));
     if (draft != null) {
       editor();
+      identity.applyTree(page);
       scroll.post(() -> scroll.scrollTo(0, previousY));
       return;
     }
-    LinearLayout title = new LinearLayout(this);
-    title.setGravity(Gravity.CENTER_VERTICAL);
-    ImageView mark = new ImageView(this);
-    mark.setImageResource(com.desperta.R.drawable.ic_alarm);
-    mark.setColorFilter(accent);
-    mark.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
-    title.addView(mark, new LinearLayout.LayoutParams(d(30), d(30)));
-    TextView brand = text("Desperta", 27, fg);
-    brand.setTypeface(null, Typeface.BOLD);
-    brand.setPadding(d(10), d(8), 0, d(8));
-    title.addView(brand, new LinearLayout.LayoutParams(0, -2, 1));
-    Button settings = button("⚙", () -> startActivity(new Intent(this, SettingsActivity.class)));
-    settings.setContentDescription("Ajustes");
-    settings.setTextSize(24);
-    settings.setBackgroundColor(Color.TRANSPARENT);
-    title.addView(settings, new LinearLayout.LayoutParams(d(52), d(52)));
-    body.addView(title);
+    homeHeader();
     UpdateChecker.Result update = UpdateChecker.cachedResult(this);
     if (update.status == UpdateChecker.Result.Status.UPDATE_AVAILABLE
         && Store.getSession(this) == null) {
@@ -272,15 +283,62 @@ public class MainActivity extends Activity {
       undo.addView(restore, new LinearLayout.LayoutParams(-2, -2));
       page.addView(undo);
     }
-    Button add = primary("+ Alarme", () -> beginEdit(new Alarm()));
+    Button add =
+        primary(
+            identity.isTerminal() ? "[ + NOVO ALARME ]" : "+ Alarme", () -> beginEdit(new Alarm()));
+    add.setContentDescription("Adicionar alarme");
+    if (identity.isRetro()) {
+      identity.styleText(add, true);
+      add.setTypeface(identity.displayFont, Typeface.NORMAL);
+      add.setTextSize(27);
+      add.setMinHeight(d(76));
+      Drawable badge =
+          new HomeArtwork(this, "retro", new android.graphics.Rect(101, 1674, 207, 1790));
+      badge.setBounds(0, 0, d(52), d(46));
+      add.setCompoundDrawables(badge, null, null, null);
+      add.setCompoundDrawablePadding(d(12));
+      add.setPadding(d(38), d(8), d(28), d(8));
+      add.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+      add.setTextSize(31);
+      add.setText("+ Alarme");
+    }
+    if (identity.isMatrix() || identity.isTerminal()) {
+      add.setMinHeight(d(identity.isMatrix() ? 81 : 86));
+      add.setTextSize(identity.isTerminal() ? 38 : 26);
+      if (identity.isTerminal()) add.setTypeface(identity.bodyFont, Typeface.NORMAL);
+      if (identity.isMatrix()) {
+        add.setText("＋  Alarme");
+        add.setTypeface(identity.bodyFont, Typeface.NORMAL);
+      }
+      LinearLayout.LayoutParams ap =
+          new LinearLayout.LayoutParams(identity.isMatrix() ? d(312) : -1, -2);
+      ap.gravity = Gravity.CENTER_HORIZONTAL;
+      ap.setMargins(0, d(10), 0, d(12));
+      add.setLayoutParams(ap);
+    }
+    if (identity.isNineties()) {
+      add.setTextSize(30);
+      add.setMinHeight(d(66));
+      Drawable plus =
+          new HomeArtwork(this, "nineties", new android.graphics.Rect(52, 1671, 137, 1761));
+      plus.setBounds(0, 0, d(42), d(45));
+      add.setCompoundDrawables(plus, null, null, null);
+      add.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+      add.setPadding(d(12), d(8), d(14), d(8));
+      add.setCompoundDrawablePadding(d(82));
+      LinearLayout.LayoutParams addParams = new LinearLayout.LayoutParams(-1, -2);
+      addParams.setMargins(d(5), 0, d(5), 0);
+      add.setLayoutParams(addParams);
+    }
     page.addView(add);
+    identity.applyTree(page);
   }
 
   Button primary(String title, Runnable action) {
     Button b = button(title, action);
     b.setTypeface(null, Typeface.BOLD);
     b.setBackground(shape(accent, 16));
-    b.setTextColor(light ? Color.WHITE : Color.parseColor("#172033"));
+    b.setTextColor(identity.onAccent);
     return b;
   }
 
@@ -321,7 +379,7 @@ public class MainActivity extends Activity {
   String days(int mask) {
     if (mask == 127) return "Todos os dias";
     if (mask == 62) return "Seg–Sex";
-    if (mask == 65) return "Sáb e Dom";
+    if (mask == 65) return "Sáb–Dom";
     if (mask == 0) return "Uma vez";
     List<String> selected = new ArrayList<>();
     String[] n = {"Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"};
@@ -340,30 +398,274 @@ public class MainActivity extends Activity {
     return alarm.missions.size() + " missões em sequência";
   }
 
+  void homeHeader() {
+    FrameLayout frame = new FrameLayout(this);
+    LinearLayout.LayoutParams fp =
+        new LinearLayout.LayoutParams(
+            -1,
+            d(
+                identity.isRetro()
+                    ? 225
+                    : identity.isNineties() ? 66 : identity.isTerminal() ? 40 : 64));
+    fp.setMargins(
+        0,
+        0,
+        0,
+        d(identity.isTerminal() ? 20 : (identity.isNineties() || identity.isRetro()) ? 0 : 6));
+    frame.setLayoutParams(fp);
+    if (identity.isRetro())
+      frame.setBackground(
+          new HomeArtwork(this, "retro", new android.graphics.Rect(16, 91, 838, 558)));
+    else if (identity.isNineties()) {
+      GradientDrawable blue =
+          new GradientDrawable(
+              GradientDrawable.Orientation.LEFT_RIGHT,
+              new int[] {Color.rgb(0, 0, 112), Color.rgb(25, 55, 158)});
+      blue.setStroke(d(2), Color.WHITE);
+      frame.setBackground(blue);
+    }
+    TextView brand =
+        text(
+            "Desperta",
+            identity.isRetro() ? 37 : identity.isTerminal() ? 41 : 31,
+            identity.isNineties() ? Color.WHITE : fg);
+    identity.styleText(brand, true);
+    brand.setSingleLine(true);
+    brand.setIncludeFontPadding(false);
+    brand.setPadding(0, 0, 0, 0);
+    brand.setAutoSizeTextTypeUniformWithConfiguration(
+        20,
+        identity.isRetro() ? 37 : identity.isTerminal() ? 41 : 31,
+        1,
+        android.util.TypedValue.COMPLEX_UNIT_SP);
+    FrameLayout.LayoutParams bp =
+        new FrameLayout.LayoutParams(-1, d(64), Gravity.TOP | Gravity.START);
+    bp.setMargins(d(14), d(4), d(identity.isTerminal() ? 119 : 66), 0);
+    if (identity.isRetro())
+      brand.setTextColor(
+          Color.TRANSPARENT); // Static wordmark is the approved artwork; semantic text stays
+    // accessible.
+    if (identity.isMatrix()) {
+      brand.setGravity(Gravity.CENTER);
+      bp.setMargins(d(44), 0, d(44), 0);
+    }
+    if (identity.isTerminal()) {
+      bp.setMargins(d(4), 0, d(114), 0);
+    }
+    if (identity.isNineties()) {
+      ImageView emblem = new ImageView(this);
+      emblem.setImageDrawable(
+          new HomeArtwork(this, "nineties", new android.graphics.Rect(43, 114, 126, 204)));
+      FrameLayout.LayoutParams emblemParams =
+          new FrameLayout.LayoutParams(d(32), d(40), Gravity.CENTER_VERTICAL | Gravity.START);
+      emblemParams.leftMargin = d(14);
+      frame.addView(emblem, emblemParams);
+      bp.setMargins(d(64), d(16), d(66), 0);
+      emblem.setTranslationY(d(3));
+    }
+    frame.addView(brand, bp);
+    if (identity.isTerminal()) {
+      View rule = new View(this);
+      rule.setBackgroundColor(accent);
+      frame.addView(rule, new FrameLayout.LayoutParams(-1, d(1), Gravity.BOTTOM));
+    }
+    Button settings =
+        button(
+            identity.isTerminal() ? "[AJUSTES]" : "⚙",
+            () -> startActivity(new Intent(this, SettingsActivity.class)));
+    settings.setContentDescription("Ajustes");
+    settings.setTextSize(identity.isTerminal() ? 20 : 29);
+    settings.setPadding(0, 0, 0, 0);
+    settings.setMinWidth(0);
+    if (identity.isRetro()) {
+      settings.setBackgroundColor(Color.TRANSPARENT);
+      settings.setTextColor(Color.TRANSPARENT);
+    } else if (!identity.isNineties()) settings.setBackgroundColor(Color.TRANSPARENT);
+    FrameLayout.LayoutParams sp =
+        new FrameLayout.LayoutParams(
+            d(identity.isTerminal() ? 114 : identity.isNineties() ? 38 : 52),
+            d(identity.isTerminal() ? 40 : identity.isNineties() ? 42 : 52),
+            Gravity.TOP | Gravity.END);
+    sp.setMargins(
+        0,
+        d(identity.isTerminal() || identity.isMatrix() ? 0 : 10),
+        d(identity.isMatrix() ? -15 : identity.isTerminal() ? -20 : 10),
+        0);
+    if (identity.isNineties()) {
+      settings.setBackground(
+          new HomeArtwork(this, "nineties", new android.graphics.Rect(744, 109, 824, 197)));
+      settings.setTextColor(Color.TRANSPARENT);
+      settings.setTranslationY(d(5));
+    }
+    if (identity.isMatrix()) {
+      settings.setTextColor(Color.TRANSPARENT);
+      settings.setForeground(
+          new android.graphics.drawable.InsetDrawable(new HomeArtwork.Gear(), d(14)));
+    }
+    frame.addView(settings, sp);
+    body.addView(frame);
+  }
+
   void alarms() {
     List<Alarm> all = Store.all(this);
     long now = System.currentTimeMillis();
     all.sort(Comparator.comparingLong(a -> a.enabled ? Scheduler.next(a, now) : Long.MAX_VALUE));
     Alarm next = all.stream().filter(a -> a.enabled).findFirst().orElse(null);
     LinearLayout hero = box();
-    hero.setPadding(d(20), d(18), d(20), d(18));
-    hero.addView(text(next == null ? "SUA PRÓXIMA MANHÃ" : "PRÓXIMO ALARME", 11, accent));
-    TextView nextLabel =
-        text(next == null ? "Amanhã começa aqui." : occurrence(Scheduler.next(next, now)), 28, fg);
-    nextLabel.setTypeface(null, Typeface.BOLD);
-    hero.addView(nextLabel);
-    hero.addView(
-        text(
-            next == null
-                ? "Escolha um horário e um jeito de despertar."
-                : remaining(Scheduler.next(next, now)) + " · " + next.label,
-            14,
-            muted));
+    hero.setPadding(d(16), d(10), d(16), d(12));
+    if (identity.isMatrix()) {
+      LinearLayout.LayoutParams hp = (LinearLayout.LayoutParams) hero.getLayoutParams();
+      hp.setMargins(d(10), d(11), d(10), d(18));
+      hero.setLayoutParams(hp);
+    }
+    hero.setGravity(Gravity.CENTER_HORIZONTAL);
+    TextView caption = text(next == null ? "SUA PRÓXIMA MANHÃ" : "PRÓXIMO ALARME", 14, accent);
+    caption.setLetterSpacing(identity.isRetro() ? .12f : .04f);
+    if (identity.isRetro()) caption.setTextSize(15);
+    caption.setGravity(Gravity.CENTER);
+    if (identity.isTerminal()) caption.setTextSize(20);
+    if (identity.isMatrix()) {
+      caption.setTextColor(fg);
+      caption.setTranslationY(d(9));
+    }
+    if (identity.isNineties()) {
+      caption.setGravity(Gravity.START);
+      caption.setTextSize(15);
+    }
+    if (identity.isRetro()) {
+      LinearLayout titleRow = new LinearLayout(this);
+      titleRow.setGravity(Gravity.CENTER_VERTICAL);
+      titleRow.setPadding(d(16), 0, d(16), 0);
+      for (int side = 0; side < 2; side++) {
+        ImageView rule = new ImageView(this);
+        rule.setImageDrawable(
+            new HomeArtwork(
+                this,
+                "retro",
+                side == 0
+                    ? new android.graphics.Rect(84, 621, 241, 639)
+                    : new android.graphics.Rect(620, 621, 771, 639)));
+        titleRow.addView(rule, new LinearLayout.LayoutParams(0, d(8), 1));
+        if (side == 0) {
+          caption.setPadding(d(12), d(6), d(12), d(6));
+          titleRow.addView(caption, new LinearLayout.LayoutParams(-2, -2));
+        }
+      }
+      hero.addView(titleRow, new LinearLayout.LayoutParams(-1, -2));
+    } else hero.addView(caption, new LinearLayout.LayoutParams(-1, -2));
+    if (identity.isNineties()) {
+      View rule = new View(this);
+      rule.setBackgroundColor(identity.isRetro() ? muted : Color.WHITE);
+      LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, d(1));
+      rp.setMargins(d(4), d(3), d(4), d(5));
+      hero.addView(rule, rp);
+    }
+    long nextAt = next == null ? 0 : Scheduler.next(next, now);
+    String nextTime =
+        next == null
+            ? "--:--"
+            : new java.text.SimpleDateFormat("HH:mm", Locale.getDefault()).format(new Date(nextAt));
+    TextView clock =
+        (identity.isNineties() || identity.isMatrix())
+            ? new HomeArtwork.DigitalTime(this)
+            : new HomeArtwork.SpaceTime(this);
+    if (clock instanceof HomeArtwork.SpaceTime) ((HomeArtwork.SpaceTime) clock).accentColon = true;
+    clock.setTextColor(fg);
+    clock.setText(nextTime);
+    if (clock instanceof HomeArtwork.DigitalTime)
+      ((HomeArtwork.DigitalTime) clock).setMatrix(identity.isMatrix());
+    identity.styleTime(clock);
+    if (identity.isRetro()) {
+      clock.setTypeface(identity.timeFont);
+    }
+    clock.setGravity(Gravity.CENTER);
+    clock.setSingleLine(true);
+    clock.setIncludeFontPadding(false);
+    clock.setAutoSizeTextTypeUniformWithConfiguration(
+        36,
+        identity.isRetro() ? 100 : identity.isTerminal() ? 106 : 82,
+        1,
+        android.util.TypedValue.COMPLEX_UNIT_SP);
+    clock.setPadding(0, 0, 0, 0);
+    if (identity.isMatrix()) {
+      clock.setShadowLayer(d(9), 0, 0, 0x6646FF8F);
+      clock.setTranslationY(-d(4));
+    }
+    if (identity.isRetro() && next != null) {
+      android.text.SpannableString display = new android.text.SpannableString(nextTime);
+      display.setSpan(new android.text.style.ForegroundColorSpan(accent), 2, 3, 0);
+      clock.setText(display);
+    }
+    if (identity.isNineties()) {
+      ImageView sunrise = new ImageView(this);
+      sunrise.setImageDrawable(
+          new HomeArtwork(this, "nineties", new android.graphics.Rect(338, 394, 524, 553)));
+      sunrise.setImportantForAccessibility(View.IMPORTANT_FOR_ACCESSIBILITY_NO);
+      LinearLayout.LayoutParams artp = new LinearLayout.LayoutParams(d(85), d(73));
+      artp.setMargins(0, d(14), 0, d(21));
+      hero.addView(sunrise, artp);
+      GradientDrawable inset = new GradientDrawable();
+      inset.setColor(0xFF000018);
+      inset.setStroke(d(9), 0xFF888888);
+      clock.setBackground(
+          new IdentityDrawable(
+              identity,
+              IdentityDrawable.DIGITAL_BEZEL,
+              getResources().getDisplayMetrics().density,
+              null));
+    }
+    LinearLayout.LayoutParams cp =
+        new LinearLayout.LayoutParams(
+            identity.isNineties() ? d(262) : -1,
+            d(
+                identity.isNineties()
+                    ? 127
+                    : identity.isRetro() ? 112 : identity.isTerminal() ? 94 : 110));
+    hero.addView(clock, cp);
+    if (identity.isRetro()) {
+      ImageView rule = new ImageView(this);
+      rule.setImageDrawable(
+          new HomeArtwork(this, "retro", new android.graphics.Rect(85, 876, 769, 907)));
+      LinearLayout.LayoutParams railParams = new LinearLayout.LayoutParams(-1, d(14));
+      railParams.setMargins(d(16), 0, d(16), 0);
+      hero.addView(rule, railParams);
+    }
+    String subtitle;
+    if (next == null) subtitle = "Escolha um horário para despertar.";
+    else {
+      String date = occurrence(nextAt);
+      subtitle =
+          date.substring(0, date.lastIndexOf(", "))
+              + " · "
+              + remaining(nextAt).toLowerCase(new Locale("pt", "BR"));
+    }
+    TextView sub = text(subtitle, identity.isNineties() ? 22 : identity.isTerminal() ? 22 : 15, fg);
+    sub.setGravity(Gravity.CENTER);
+    if (identity.isRetro()) {
+      android.text.SpannableString colored = new android.text.SpannableString(subtitle);
+      int separator = subtitle.indexOf('·');
+      if (separator >= 0)
+        colored.setSpan(
+            new android.text.style.ForegroundColorSpan(accent), separator, separator + 1, 0);
+      sub.setText(colored);
+    }
+    if (identity.isMatrix()) sub.setTranslationY(-d(15));
+    if (identity.isNineties()) sub.setPadding(0, d(6), 0, d(16));
+    hero.addView(sub);
     if (next != null) {
       hero.setContentDescription(
-          "Editar próximo alarme, " + occurrence(Scheduler.next(next, now)) + ", " + next.label);
+          "Editar próximo alarme, " + occurrence(nextAt) + ", " + next.label);
       hero.setFocusable(true);
       hero.setOnClickListener(v -> beginEdit(Alarm.from(next.json())));
+    }
+    if (identity.isNineties()) {
+      body.removeView(hero);
+      LinearLayout window = new LinearLayout(this);
+      window.setOrientation(LinearLayout.VERTICAL);
+      window.setPadding(d(14), d(24), d(14), d(18));
+      window.setBackground(identity.panel(this));
+      window.addView(hero, new LinearLayout.LayoutParams(-1, -2));
+      body.addView(window, new LinearLayout.LayoutParams(-1, -2));
     }
     if (needsAttention()) {
       Button permission =
@@ -373,26 +675,160 @@ public class MainActivity extends Activity {
       permission.setTextColor(accent);
       body.addView(permission);
     }
-    if (!all.isEmpty()) heading("Seus alarmes");
     for (Alarm a : all) {
       LinearLayout c = box();
-      c.setPadding(d(16), d(8), d(10), d(12));
+      c.setPadding(d(identity.isTerminal() ? 18 : 12), d(7), d(8), d(7));
+      if (identity.isMatrix()) c.setPadding(d(12), d(15), d(8), d(15));
+      if (identity.isNineties()) {
+        LinearLayout.LayoutParams rp = (LinearLayout.LayoutParams) c.getLayoutParams();
+        rp.setMargins(d(5), d(9), d(5), 0);
+        c.setLayoutParams(rp);
+      }
+      if (identity.isRetro())
+        c.setForeground(new HomeArtwork.RetroRail(this, a.days == 65 ? fg : accent));
       LinearLayout row = new LinearLayout(this);
       row.setGravity(Gravity.CENTER_VERTICAL);
+      if (identity.isRetro()) {
+        View icon = new HomeArtwork.Emblem(this, identity, a.days == 65);
+        LinearLayout.LayoutParams ip = new LinearLayout.LayoutParams(d(68), d(77));
+        ip.setMargins(d(14), 0, d(16), 0);
+        row.addView(icon, ip);
+      }
+      if (identity.isNineties()) {
+        ImageView emblem = new ImageView(this);
+        emblem.setImageDrawable(
+            new HomeArtwork(this, "nineties", new android.graphics.Rect(51, 1084, 157, 1190)));
+        LinearLayout.LayoutParams ep = new LinearLayout.LayoutParams(d(52), d(54));
+        ep.setMargins(0, 0, d(12), 0);
+        row.addView(emblem, ep);
+      }
+      LinearLayout info = new LinearLayout(this);
+      info.setOrientation(LinearLayout.VERTICAL);
       TextView time =
-          text(
-              String.format(Locale.getDefault(), "%02d:%02d", a.hour, a.minute),
-              34,
-              a.enabled ? fg : muted);
-      time.setTypeface(Typeface.create("sans-serif-medium", Typeface.NORMAL));
-      row.addView(time, new LinearLayout.LayoutParams(0, -2, 1));
+          identity.isMatrix()
+              ? new HomeArtwork.DigitalTime(this)
+              : (identity.isRetro() || identity.isTerminal())
+                  ? new HomeArtwork.SpaceTime(this)
+                  : text("", identity.isTerminal() ? 43 : 34, fg);
+      time.setTextColor(fg);
+      time.setText(String.format(Locale.getDefault(), "%02d:%02d", a.hour, a.minute));
+      if (time instanceof HomeArtwork.DigitalTime) ((HomeArtwork.DigitalTime) time).setMatrix(true);
+      identity.styleTime(time);
+      if (identity.isRetro()) {
+        time.setTypeface(identity.timeFont);
+      }
+      time.setSingleLine(true);
+      time.setPadding(0, 0, 0, 0);
+      time.setAutoSizeTextTypeUniformWithConfiguration(
+          22,
+          identity.isRetro() ? 34 : identity.isTerminal() ? 43 : 34,
+          1,
+          android.util.TypedValue.COMPLEX_UNIT_SP);
+      if (identity.isMatrix()) {
+        LinearLayout.LayoutParams tp = new LinearLayout.LayoutParams(d(100), d(62));
+        tp.setMargins(0, 0, d(10), 0);
+        row.addView(time, tp);
+      } else
+        info.addView(
+            time,
+            new LinearLayout.LayoutParams(
+                -1, d(identity.isRetro() ? 30 : identity.isTerminal() ? 38 : 48)));
+      TextView label = text(a.label, identity.isTerminal() ? 23 : 16, fg);
+      label.setPadding(0, 0, 0, d(2));
+      label.setTypeface(
+          identity.bodyFont,
+          (identity.isMatrix() || identity.isTerminal()) ? Typeface.NORMAL : Typeface.BOLD);
+      if (identity.isMatrix()) label.setTextColor(0xFFF0F3F0);
+      info.addView(label);
+      row.addView(info, new LinearLayout.LayoutParams(0, -2, 1));
       Switch sw = new Switch(this);
-      sw.setMinWidth(d(52));
+      sw.setMinWidth(d(48));
       sw.setMinHeight(d(48));
+      sw.setPadding(0, 0, 0, 0);
       sw.setContentDescription("Ativar " + a.label);
       sw.setChecked(a.enabled);
       tintSwitch(sw);
-      row.addView(sw);
+      if (identity.isRetro()) {
+        GradientDrawable thumb =
+            new GradientDrawable(
+                GradientDrawable.Orientation.TL_BR, new int[] {0xFFFFF5D9, 0xFFD5BD92, 0xFFF7EBCD});
+        thumb.setShape(GradientDrawable.OVAL);
+        thumb.setSize(d(27), d(27));
+        thumb.setStroke(d(1), 0xFFAC936E);
+        GradientDrawable track = new GradientDrawable();
+        track.setColor(a.enabled ? accent : identity.raised);
+        track.setCornerRadius(d(18));
+        track.setSize(d(47), d(25));
+        track.setStroke(d(1), 0xFFB09A72);
+        sw.setThumbDrawable(thumb);
+        sw.setTrackDrawable(track);
+        sw.setThumbTintList(null);
+        sw.setTrackTintList(null);
+        sw.setSwitchMinWidth(d(47));
+      }
+      if (identity.isNineties()) {
+        GradientDrawable knob = new GradientDrawable();
+        knob.setColor(Color.WHITE);
+        knob.setSize(d(20), d(24));
+        knob.setStroke(d(1), 0xFF666666);
+        GradientDrawable track = new GradientDrawable();
+        track.setColor(a.enabled ? 0xFF008080 : 0xFF888888);
+        track.setSize(d(55), d(27));
+        sw.setSwitchMinWidth(d(55));
+        track.setStroke(d(2), 0xFF666666);
+        sw.setThumbDrawable(knob);
+        sw.setTrackDrawable(track);
+        sw.setThumbTintList(null);
+        sw.setTrackTintList(null);
+      }
+      if (identity.isMatrix()) {
+        GradientDrawable knob = new GradientDrawable();
+        knob.setColor(Color.WHITE);
+        knob.setShape(GradientDrawable.OVAL);
+        knob.setSize(d(24), d(24));
+        GradientDrawable track =
+            new GradientDrawable(
+                GradientDrawable.Orientation.LEFT_RIGHT,
+                new int[] {
+                  a.enabled ? 0xFF427F53 : 0xFF101615, a.enabled ? 0xFF12D74B : 0xFF202827
+                });
+        track.setSize(d(48), d(25));
+        track.setCornerRadius(d(15));
+        track.setStroke(d(1), a.enabled ? 0xFF8BCE9E : 0xFF57625F);
+        sw.setThumbDrawable(knob);
+        sw.setTrackDrawable(track);
+        sw.setThumbTintList(null);
+        sw.setTrackTintList(null);
+      }
+      if (identity.isTerminal()) {
+        Button status =
+            button(
+                a.enabled ? "[ATIVO]" : "[PAUSADO]",
+                () -> {
+                  a.enabled = !a.enabled;
+                  Store.save(this, a);
+                  schedule(a);
+                  render();
+                });
+        status.setContentDescription("Ativar " + a.label);
+        status.setTextSize(19);
+        status.setPadding(0, 0, d(7), 0);
+        status.setGravity(Gravity.CENTER_VERTICAL | Gravity.END);
+        status.setBackgroundColor(Color.TRANSPARENT);
+        row.addView(status, new LinearLayout.LayoutParams(d(94), d(52)));
+      } else {
+        LinearLayout.LayoutParams switchParams = new LinearLayout.LayoutParams(d(56), d(52));
+        if (identity.isRetro() || identity.isNineties()) switchParams.rightMargin = d(14);
+        row.addView(sw, switchParams);
+      }
+      if (!identity.isNineties() && !identity.isRetro()) {
+        View divider = new View(this);
+        divider.setBackgroundColor(muted);
+        LinearLayout.LayoutParams dp =
+            new LinearLayout.LayoutParams(d(1), d(identity.isTerminal() ? 69 : 50));
+        dp.setMargins(d(5), 0, d(3), 0);
+        row.addView(divider, dp);
+      }
       sw.setOnCheckedChangeListener(
           (v, on) -> {
             a.enabled = on;
@@ -400,14 +836,50 @@ public class MainActivity extends Activity {
             schedule(a);
             render();
           });
-      Button menu = button("⋮", () -> alarmMenu(a));
-      menu.setTextSize(24);
-      menu.setBackgroundColor(Color.TRANSPARENT);
+      Button menu =
+          button(
+              identity.isTerminal() ? "[...]" : identity.isNineties() ? "…" : "⋮",
+              () -> alarmMenu(a));
+      menu.setTextSize(23);
+      menu.setSingleLine(true);
+      menu.setAutoSizeTextTypeUniformWithConfiguration(
+          14, 23, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+      menu.setPadding(0, 0, 0, 0);
+      menu.setMinWidth(0);
+      if (!identity.isNineties()) menu.setBackgroundColor(Color.TRANSPARENT);
       menu.setContentDescription("Mais opções de " + a.label);
-      row.addView(menu, new LinearLayout.LayoutParams(d(48), d(48)));
+      row.addView(
+          menu,
+          new LinearLayout.LayoutParams(
+              d(
+                  identity.isMatrix() || identity.isNineties()
+                      ? 36
+                      : identity.isTerminal() ? 44 : 48),
+              d(identity.isNineties() ? 38 : 52)));
       c.addView(row);
-      c.addView(text(a.label, 16, fg));
-      c.addView(text(days(a.days) + " · " + missionSummary(a), 13, muted));
+      TextView detail =
+          text(
+              days(a.days) + " · " + missionSummary(a),
+              identity.isMatrix()
+                  ? 10
+                  : identity.isNineties() ? 15 : identity.isTerminal() ? 18 : 12,
+              identity.isRetro() ? fg : muted);
+      if (identity.isRetro()) {
+        detail.setTranslationY(-d(8));
+        android.text.SpannableString line = new android.text.SpannableString(detail.getText());
+        int dot = line.toString().indexOf("·");
+        if (dot >= 0)
+          line.setSpan(new android.text.style.ForegroundColorSpan(accent), dot, dot + 1, 0);
+        detail.setText(line);
+      }
+      detail.setPadding(d(identity.isRetro() ? 96 : identity.isNineties() ? 64 : 0), d(1), 0, d(1));
+      if (identity.isMatrix()) {
+        detail.setPadding(0, d(2), 0, 0);
+        detail.setSingleLine(true);
+        detail.setAutoSizeTextTypeUniformWithConfiguration(
+            8, 10, 1, android.util.TypedValue.COMPLEX_UNIT_SP);
+        info.addView(detail);
+      } else c.addView(detail);
       c.setFocusable(true);
       c.setContentDescription(
           "Editar alarme "
@@ -415,14 +887,61 @@ public class MainActivity extends Activity {
               + ", "
               + String.format(Locale.getDefault(), "%02d:%02d", a.hour, a.minute));
       c.setOnClickListener(v -> beginEdit(Alarm.from(a.json())));
-      if (!a.enabled) c.addView(text("Desativado", 12, muted));
       if (a.skipUntil > now) c.addView(text("Pulando " + occurrence(a.skipUntil), 12, accent));
       if (Scheduler.hasNextOverride(a, now))
         c.addView(text("Só na próxima vez: " + occurrence(a.nextOverrideAt), 12, accent));
     }
-    Button templates = button("Usar um modelo", this::templates);
-    templates.setTextColor(accent);
-    templates.setBackgroundColor(Color.TRANSPARENT);
+    Button templates =
+        button(identity.isTerminal() ? "[ USAR UM MODELO ]" : "Usar um modelo", this::templates);
+    templates.setTextColor(fg);
+    if (identity.isTerminal()) templates.setTextSize(22);
+    templates.setBackground(identity.secondary(this));
+    if (identity.isMatrix() || identity.isTerminal()) {
+      View spacer = new View(this);
+      body.addView(spacer, new LinearLayout.LayoutParams(-1, 0, 1));
+      LinearLayout.LayoutParams mp =
+          new LinearLayout.LayoutParams(
+              d(identity.isMatrix() ? 214 : 238), d(identity.isMatrix() ? 55 : 48));
+      mp.gravity = Gravity.CENTER_HORIZONTAL;
+      mp.setMargins(0, d(18), 0, d(identity.isTerminal() ? 48 : 0));
+      templates.setLayoutParams(mp);
+    }
+    if (identity.isRetro()) {
+      templates.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+      templates.setTextSize(18);
+      templates.setPadding(d(29), d(10), d(24), d(10));
+      Drawable star =
+          new HomeArtwork(this, "retro", new android.graphics.Rect(86, 1528, 155, 1600));
+      star.setBounds(0, 0, d(32), d(33));
+      Drawable arrow =
+          new HomeArtwork(this, "retro", new android.graphics.Rect(721, 1543, 753, 1585));
+      arrow.setBounds(0, 0, d(16), d(21));
+      templates.setCompoundDrawables(star, null, arrow, null);
+      templates.setCompoundDrawablePadding(d(14));
+    }
+    if (identity.isMatrix()) {
+      Drawable icon =
+          new HomeArtwork(this, "matrix", new android.graphics.Rect(280, 1467, 320, 1507));
+      icon.setBounds(0, 0, d(20), d(20));
+      templates.setCompoundDrawables(icon, null, null, null);
+      templates.setCompoundDrawablePadding(d(14));
+      templates.setPadding(d(35), d(8), d(12), d(8));
+      templates.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+      templates.setTextSize(15);
+    }
+    if (identity.isNineties()) {
+      Drawable document =
+          new HomeArtwork(this, "nineties", new android.graphics.Rect(53, 1536, 113, 1599));
+      document.setBounds(0, 0, d(32), d(34));
+      templates.setCompoundDrawables(document, null, null, null);
+      templates.setCompoundDrawablePadding(d(14));
+      templates.setGravity(Gravity.CENTER_VERTICAL | Gravity.START);
+      templates.setTextSize(19);
+      templates.setMinHeight(d(55));
+      LinearLayout.LayoutParams modelParams = new LinearLayout.LayoutParams(-1, -2);
+      modelParams.setMargins(d(5), d(8), d(5), 0);
+      templates.setLayoutParams(modelParams);
+    }
     body.addView(templates);
   }
 
@@ -1103,12 +1622,12 @@ public class MainActivity extends Activity {
   }
 
   AlertDialog.Builder dialog() {
-    return new AlertDialog.Builder(
-        this, light ? android.R.style.Theme_Material_Light_Dialog_Alert : R.style.DespertaDialog);
+    return identity.dialog(this);
   }
 
   void input(String title, String initial, boolean number, Value action) {
     EditText e = new EditText(this);
+    identity.styleText(e, false);
     e.setTextColor(fg);
     e.setHintTextColor(muted);
     e.setBackgroundTintList(android.content.res.ColorStateList.valueOf(accent));

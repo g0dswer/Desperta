@@ -132,7 +132,10 @@ public class MainActivityWheelFlowTest {
 
   private void click(String text) throws Exception {
     UiObject object =
-        ui.findObject(new UiSelector().textMatches("(?iu)" + java.util.regex.Pattern.quote(text)));
+        ui.findObject(
+            text.equals("+ Alarme")
+                ? new UiSelector().description("Adicionar alarme")
+                : new UiSelector().textMatches("(?iu)" + java.util.regex.Pattern.quote(text)));
     assertTrue("Missing UI text: " + text, object.waitForExists(5000));
     object.click();
     ui.waitForIdle();

@@ -1,0 +1,11 @@
+
+com.desperta.IdentityFlowTest:...........
+com.desperta.AppFlowTest:..........
+com.desperta.AppearanceFlowTest:..
+com.desperta.MainActivityWheelFlowTest:..
+
+Time: 306.733
+
+OK (25 tests)
+
+

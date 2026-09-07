@@ -32,15 +32,6 @@ import java.util.Locale;
 /** Full-screen alarm surface. Playback and session state stay in AlarmService. */
 public class RingActivity extends Activity {
   private static final int REQUEST_MISSION = 710;
-  private static final int BG = Color.rgb(16, 26, 42);
-  private static final int CARD = Color.rgb(27, 42, 61);
-  private static final int FG = Color.rgb(255, 246, 231);
-  private static final int MUTED = Color.rgb(173, 185, 201);
-  private static final int PRIMARY = Color.rgb(246, 185, 93);
-  private static final int PRIMARY_TEXT = Color.rgb(23, 32, 51);
-  private static final int SUCCESS = Color.rgb(132, 213, 176);
-  private static final int ERROR = Color.rgb(255, 173, 176);
-
   private int alarmId = -1;
   private boolean preview;
   private Alarm alarm;
@@ -52,10 +43,12 @@ public class RingActivity extends Activity {
   private boolean missionOpen;
   private BroadcastReceiver missionReceiver;
   private final Handler handler = new Handler();
+  private Identity theme;
 
   @Override
   protected void onCreate(Bundle state) {
     super.onCreate(state);
+    theme = Identity.current(this);
     configureWindow();
     readIntent(getIntent());
     if (state != null) {
@@ -102,9 +95,9 @@ public class RingActivity extends Activity {
   }
 
   private void configureWindow() {
+    if (theme == null) theme = Identity.current(this);
+    theme.applyWindow(this);
     Window window = getWindow();
-    window.setStatusBarColor(Color.BLACK);
-    window.setNavigationBarColor(Color.BLACK);
     window.addFlags(
         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
@@ -122,16 +115,19 @@ public class RingActivity extends Activity {
                 return insets;
               });
     } else {
+      int flags = window.getDecorView().getSystemUiVisibility();
       window
           .getDecorView()
           .setSystemUiVisibility(
-              View.SYSTEM_UI_FLAG_LAYOUT_STABLE
+              flags
+                  | View.SYSTEM_UI_FLAG_LAYOUT_STABLE
                   | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
                   | View.SYSTEM_UI_FLAG_LAYOUT_HIDE_NAVIGATION);
     }
   }
 
   private void buildUi() {
+    if (theme == null) theme = Identity.current(this);
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setPadding(dp(20), dp(20), dp(20), dp(18));
@@ -146,14 +142,19 @@ public class RingActivity extends Activity {
     header.addView(sun, new LinearLayout.LayoutParams(dp(52), dp(52)));
     LinearLayout titleBox = new LinearLayout(this);
     titleBox.setOrientation(LinearLayout.VERTICAL);
-    TextView title = label(preview ? "Prévia do alarme" : "Despertar", 23, FG);
+    TextView title = label(preview ? "Prévia do alarme" : "Despertar", 23, theme.fg);
     title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    theme.styleText(title, true);
+    if (usesDarkWallpaper(alarm)) {
+      titleBox.setBackground(theme.panel(this));
+      titleBox.setPadding(dp(12), dp(6), dp(12), dp(6));
+    }
     titleBox.addView(title);
     TextView subtitle =
         label(
             alarm.label == null || alarm.label.isEmpty() ? "Hora de começar o dia" : alarm.label,
             15,
-            MUTED);
+            theme.muted);
     titleBox.addView(subtitle);
     header.addView(titleBox, new LinearLayout.LayoutParams(0, -2, 1));
     root.addView(header);
@@ -167,14 +168,22 @@ public class RingActivity extends Activity {
                 "%02d:%02d",
                 now.get(java.util.Calendar.HOUR_OF_DAY),
                 now.get(java.util.Calendar.MINUTE));
-    TextView time = label(displayedTime, 66, FG);
+    TextView time = label(displayedTime, 66, theme.fg);
     time.setGravity(android.view.Gravity.CENTER);
+    if (usesDarkWallpaper(alarm)) {
+      time.setBackground(theme.panel(this));
+      time.setPadding(dp(12), dp(4), dp(12), dp(4));
+    }
     LinearLayout.LayoutParams timeParams = new LinearLayout.LayoutParams(-1, -2);
     timeParams.setMargins(0, dp(26), 0, dp(6));
     root.addView(time, timeParams);
     TextView ringing =
-        label(preview ? "O som está sendo reproduzido" : "O alarme está tocando", 17, MUTED);
+        label(preview ? "O som está sendo reproduzido" : "O alarme está tocando", 17, theme.muted);
     ringing.setGravity(android.view.Gravity.CENTER);
+    if (usesDarkWallpaper(alarm)) {
+      ringing.setBackground(theme.panel(this));
+      ringing.setPadding(dp(12), dp(4), dp(12), dp(4));
+    }
     root.addView(ringing);
 
     ScrollView scroll = new ScrollView(this);
@@ -188,11 +197,12 @@ public class RingActivity extends Activity {
       LinearLayout missionCard = new LinearLayout(this);
       missionCard.setOrientation(LinearLayout.VERTICAL);
       missionCard.setPadding(dp(18), dp(15), dp(18), dp(15));
-      missionCard.setBackground(round(CARD, 22));
-      TextView heading = label(preview ? "Teste de missão" : "Missão para desligar", 19, FG);
+      missionCard.setBackground(theme.panel(this));
+      TextView heading = label(preview ? "Teste de missão" : "Missão para desligar", 19, theme.fg);
       heading.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+      theme.styleText(heading, true);
       missionCard.addView(heading);
-      missionStatus = label("Prepare-se…", 16, MUTED);
+      missionStatus = label("Prepare-se…", 16, theme.muted);
       missionCard.addView(missionStatus);
       content.addView(missionCard, margins(0, 18, 0, 10));
     } else {
@@ -202,11 +212,11 @@ public class RingActivity extends Activity {
                   ? "A prévia não altera histórico nem o próximo agendamento."
                   : "Você pode sonecar ou encerrar o alarme.",
               16,
-              MUTED);
+              theme.muted);
       content.addView(hint, margins(0, 28, 0, 10));
     }
 
-    status = label("", 15, MUTED);
+    status = label("", 15, theme.muted);
     status.setGravity(android.view.Gravity.CENTER);
     content.addView(status, margins(0, 5, 0, 10));
 
@@ -219,7 +229,8 @@ public class RingActivity extends Activity {
     Button primary =
         action(
             primaryText,
-            PRIMARY,
+            theme.primary(this),
+            theme.onAccent,
             () -> {
               if (preview) {
                 if (alarm.missions.isEmpty()) {
@@ -249,10 +260,11 @@ public class RingActivity extends Activity {
         Button snooze =
             action(
                 "Soneca de " + Math.max(1, alarm.snoozeMinutes) + " min · " + remainingLabel,
-                CARD,
+                theme.secondary(this),
+                theme.fg,
                 () -> {
                   if (!AlarmService.canSnooze(this, alarmId)) {
-                    setStatus("Limite de sonecas atingido.", ERROR);
+                    setStatus("Limite de sonecas atingido.", theme.error);
                     return;
                   }
                   AlarmService.snooze(this, alarmId);
@@ -260,7 +272,7 @@ public class RingActivity extends Activity {
                 });
         actions.addView(snooze);
       } else {
-        TextView limit = label("Limite de sonecas atingido", 14, MUTED);
+        TextView limit = label("Limite de sonecas atingido", 14, theme.muted);
         limit.setGravity(android.view.Gravity.CENTER);
         actions.addView(limit);
       }
@@ -269,13 +281,18 @@ public class RingActivity extends Activity {
       actions.addView(
           action(
               "Parar prévia",
-              CARD,
+              theme.secondary(this),
+              theme.fg,
               () -> {
                 AlarmService.stopPreview(this, alarmId);
                 finish();
               }));
     }
     root.addView(actions, new LinearLayout.LayoutParams(-1, -2));
+    theme.applyTree(root);
+    // The retro identity has a dedicated Orbitron clock face; apply it after the recursive body
+    // styling so the clock does not get downgraded to the regular paragraph font.
+    theme.styleTime(time);
     setContentView(root);
   }
 
@@ -292,12 +309,12 @@ public class RingActivity extends Activity {
             int index = intent.getIntExtra(AlarmService.EXTRA_MISSION_INDEX, 0);
             missionOpen = false;
             if (!success) {
-              setStatus("Código lido, mas a missão continua pendente.", ERROR);
+              setStatus("Código lido, mas a missão continua pendente.", theme.error);
             } else if (done) {
-              setStatus("Alarme desligado. Bom dia!", SUCCESS);
+              setStatus("Alarme desligado. Bom dia!", theme.positive);
               handler.postDelayed(RingActivity.this::finish, 650L);
             } else {
-              setStatus("Etapa concluída. Próxima missão…", SUCCESS);
+              setStatus("Etapa concluída. Próxima missão…", theme.positive);
               updateMissionStatus(index);
               updatePrimaryAction();
               handler.postDelayed(() -> launchMission(index), 180L);
@@ -317,7 +334,9 @@ public class RingActivity extends Activity {
   }
 
   private int currentMissionIndex() {
-    return preview ? Math.max(0, previewMissionIndex) : Math.max(0, JSONObjectSession.read(this).index);
+    return preview
+        ? Math.max(0, previewMissionIndex)
+        : Math.max(0, JSONObjectSession.read(this).index);
   }
 
   private String contextualMissionAction() {
@@ -362,7 +381,7 @@ public class RingActivity extends Activity {
     } catch (RuntimeException missingMissionScreen) {
       missionOpen = false;
       openMissionIndex = -1;
-      setStatus("Tela da missão indisponível", ERROR);
+      setStatus("Tela da missão indisponível", theme.error);
     }
   }
 
@@ -394,14 +413,12 @@ public class RingActivity extends Activity {
       if (preview) {
         int next = completedMissionIndex + 1;
         if (next >= alarm.missions.size()) {
-          setStatus("Alarme desligado. Bom dia!", SUCCESS);
+          setStatus("Alarme desligado. Bom dia!", theme.positive);
           AlarmService.stopPreview(this, alarmId);
-          handler.postDelayed(
-              RingActivity.this::finish,
-              650L);
+          handler.postDelayed(RingActivity.this::finish, 650L);
         } else {
           previewMissionIndex = next;
-          setStatus("Etapa concluída. Próxima missão…", SUCCESS);
+          setStatus("Etapa concluída. Próxima missão…", theme.positive);
           updateMissionStatus(next);
           updatePrimaryAction();
           handler.postDelayed(() -> launchMission(next), 180L);
@@ -416,7 +433,7 @@ public class RingActivity extends Activity {
       if (!serviceReported) AlarmService.missionResult(this, alarmId, completedMissionIndex, true);
     } else {
       // Cancellation and a wrong answer leave the ringing service alive.
-      setStatus("Missão não concluída. Tente novamente.", ERROR);
+      setStatus("Missão não concluída. Tente novamente.", theme.error);
     }
   }
 
@@ -426,7 +443,7 @@ public class RingActivity extends Activity {
       AlarmService.stopPreview(this, alarmId);
       finish();
     } else {
-      setStatus("Conclua a missão ou use Soneca", MUTED);
+      setStatus("Conclua a missão ou use Soneca", theme.muted);
     }
   }
 
@@ -436,7 +453,7 @@ public class RingActivity extends Activity {
         && (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN
             || keyCode == KeyEvent.KEYCODE_VOLUME_UP
             || keyCode == KeyEvent.KEYCODE_VOLUME_MUTE)) {
-      setStatus("O volume é controlado pelo alarme", MUTED);
+      setStatus("O volume é controlado pelo alarme", theme.muted);
       return true;
     }
     return super.onKeyDown(keyCode, event);
@@ -470,14 +487,14 @@ public class RingActivity extends Activity {
     return view;
   }
 
-  private Button action(String text, int color, Runnable callback) {
+  private Button action(String text, Drawable background, int textColor, Runnable callback) {
     Button button = new Button(this);
     button.setText(text);
     button.setTextSize(17);
-    button.setTextColor(color == PRIMARY ? PRIMARY_TEXT : FG);
+    button.setTextColor(textColor);
     button.setAllCaps(false);
     button.setMinHeight(dp(55));
-    button.setBackground(round(color, 18));
+    button.setBackground(background);
     button.setOnClickListener(view -> callback.run());
     button.setContentDescription(text);
     return button;
@@ -499,22 +516,31 @@ public class RingActivity extends Activity {
         if (bitmap != null) {
           BitmapDrawable image = new BitmapDrawable(getResources(), bitmap);
           image.setGravity(android.view.Gravity.FILL);
+          int veil = theme.light ? 0x66FFFFFF : 0xB809090B;
           return new android.graphics.drawable.LayerDrawable(
-              new Drawable[] {image, new android.graphics.drawable.ColorDrawable(0xB809090B)});
+              new Drawable[] {image, new android.graphics.drawable.ColorDrawable(veil)});
         }
       } catch (RuntimeException | java.io.IOException ignored) {
         // Fall back to the dark built-in wallpaper if access expired.
       }
     }
+    if (value == null || value.isEmpty() || "Aurora".equalsIgnoreCase(value)) {
+      return theme.background(this);
+    }
     int[] colors;
     if ("Oceano".equalsIgnoreCase(value)) {
-      colors = new int[] {Color.rgb(8, 24, 38), Color.rgb(10, 78, 96), BG};
+      colors = new int[] {Color.rgb(8, 24, 38), Color.rgb(10, 78, 96), theme.bg};
     } else if ("Noite".equalsIgnoreCase(value)) {
-      colors = new int[] {Color.rgb(24, 16, 45), Color.rgb(11, 11, 17), BG};
+      colors = new int[] {Color.rgb(24, 16, 45), Color.rgb(11, 11, 17), theme.bg};
     } else {
-      colors = new int[] {Color.rgb(38, 39, 68), Color.rgb(23, 36, 57), BG};
+      colors = new int[] {Color.rgb(38, 39, 68), Color.rgb(23, 36, 57), theme.bg};
     }
     return new GradientDrawable(GradientDrawable.Orientation.TL_BR, colors);
+  }
+
+  private boolean usesDarkWallpaper(Alarm current) {
+    String value = current == null ? null : current.wallpaper;
+    return value != null && !value.isEmpty() && !"Aurora".equalsIgnoreCase(value);
   }
 
   private LinearLayout.LayoutParams margins(int left, int top, int right, int bottom) {

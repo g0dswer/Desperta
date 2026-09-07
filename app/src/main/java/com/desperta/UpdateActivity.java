@@ -2,7 +2,7 @@ package com.desperta;
 
 import android.app.Activity;
 import android.content.Intent;
-import android.graphics.Color;
+import android.content.res.ColorStateList;
 import android.graphics.Typeface;
 import android.graphics.drawable.GradientDrawable;
 import android.net.Uri;
@@ -30,6 +30,7 @@ public final class UpdateActivity extends Activity {
   private int accent;
   private int positive;
   private boolean dark;
+  private Identity identity;
   private TextView status;
   private TextView details;
   private Button action;
@@ -49,19 +50,20 @@ public final class UpdateActivity extends Activity {
   }
 
   private void render() {
-    dark = isDarkTheme();
-    background = Color.parseColor(dark ? "#101A2A" : "#FAF5EC");
-    surface = Color.parseColor(dark ? "#1B2A3D" : "#FFFFFF");
-    raised = Color.parseColor(dark ? "#263A52" : "#F1E8D8");
-    primary = Color.parseColor(dark ? "#FFF6E7" : "#172033");
-    secondary = Color.parseColor(dark ? "#ADB9C9" : "#59606F");
-    accent = Color.parseColor(dark ? "#F6B95D" : "#9C5D08");
-    positive = Color.parseColor(dark ? "#83D6A3" : "#237747");
-    configureWindow();
+    identity = Identity.current(this);
+    dark = !identity.light;
+    background = identity.bg;
+    surface = identity.surface;
+    raised = identity.raised;
+    primary = identity.fg;
+    secondary = identity.muted;
+    accent = identity.accent;
+    positive = identity.positive;
+    identity.applyWindow(this);
 
     ScrollView scroll = new ScrollView(this);
     scroll.setFillViewport(true);
-    scroll.setBackgroundColor(background);
+    scroll.setBackground(identity.background(this));
     scroll.setOnApplyWindowInsetsListener(
         (view, insets) -> {
           scroll.setPadding(
@@ -134,6 +136,7 @@ public final class UpdateActivity extends Activity {
             secondary),
         margins(0, 0, 0, 0));
     setContentView(scroll);
+    identity.applyTree(scroll);
     showResult(UpdateChecker.cachedResult(this));
   }
 
@@ -195,7 +198,7 @@ public final class UpdateActivity extends Activity {
     }
     if (result.status == UpdateChecker.Result.Status.ERROR) {
       status.setText("Não foi possível verificar agora");
-      status.setTextColor(accent);
+      status.setTextColor(identity.error);
       details.setText(result.message + "\nConfira a conexão e tente novamente.");
       action.setText("Tentar novamente");
       action.setOnClickListener(v -> checkNow());
@@ -237,7 +240,7 @@ public final class UpdateActivity extends Activity {
         error -> {
           if (!isAlive()) return;
           status.setText("Download não concluído");
-          status.setTextColor(accent);
+          status.setTextColor(identity.error);
           details.setText(error == null ? "Tente novamente." : error.getMessage());
           action.setEnabled(true);
           action.setText("Tentar download");
@@ -284,6 +287,11 @@ public final class UpdateActivity extends Activity {
     row.addView(copy, weightWrap());
     Switch value = new Switch(this);
     value.setChecked(checked);
+    int[][] switchStates = new int[][] {new int[] {android.R.attr.state_checked}, new int[] {}};
+    value.setThumbTintList(
+        new ColorStateList(switchStates, new int[] {identity.onAccent, identity.fg}));
+    value.setTrackTintList(
+        new ColorStateList(switchStates, new int[] {identity.accent, identity.muted}));
     value.setContentDescription(title);
     value.setOnCheckedChangeListener((button, isChecked) -> listener.accept(isChecked));
     row.addView(value, fixed(56, 48));
@@ -300,7 +308,7 @@ public final class UpdateActivity extends Activity {
     LinearLayout card = new LinearLayout(this);
     card.setOrientation(LinearLayout.VERTICAL);
     card.setPadding(dp(16), dp(12), dp(16), dp(14));
-    card.setBackground(round(surface, 20));
+    card.setBackground(identity.panel(this));
     return card;
   }
 
@@ -319,6 +327,7 @@ public final class UpdateActivity extends Activity {
     view.setTextSize(size);
     view.setTextColor(color);
     view.setTypeface(Typeface.DEFAULT, style);
+    identity.styleText(view, size >= 20);
     view.setGravity(Gravity.CENTER_VERTICAL);
     view.setPadding(dp(left), dp(top), dp(right), dp(bottom));
     return view;
@@ -330,17 +339,17 @@ public final class UpdateActivity extends Activity {
     value.setTextSize(15);
     value.setAllCaps(false);
     value.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
-    value.setTextColor(filled ? (dark ? Color.parseColor("#172033") : Color.WHITE) : primary);
+    value.setTextColor(filled ? identity.onAccent : primary);
     value.setMinHeight(dp(52));
     value.setMinWidth(0);
     value.setPadding(dp(14), dp(10), dp(14), dp(10));
-    value.setBackground(round(filled ? accent : raised, 14));
+    value.setBackground(filled ? identity.primary(this) : identity.secondary(this));
     return value;
   }
 
   private View divider() {
     View value = new View(this);
-    value.setBackgroundColor(Color.parseColor(dark ? "#30425A" : "#E8DDCB"));
+    value.setBackgroundColor(identity.muted);
     value.setLayoutParams(new LinearLayout.LayoutParams(-1, dp(1)));
     return value;
   }
@@ -378,26 +387,8 @@ public final class UpdateActivity extends Activity {
     return Math.round(value * getResources().getDisplayMetrics().density);
   }
 
-  private boolean isDarkTheme() {
-    String value = getSharedPreferences(Weather.PREFS, MODE_PRIVATE).getString("theme", "dark");
-    if ("light".equals(value)) return false;
-    if ("system".equals(value)) {
-      int mode =
-          getResources().getConfiguration().uiMode
-              & android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-      return mode == android.content.res.Configuration.UI_MODE_NIGHT_YES;
-    }
-    return true;
-  }
-
   private void configureWindow() {
-    getWindow().setStatusBarColor(dark ? background : background);
-    getWindow().setNavigationBarColor(dark ? background : background);
-    int flags = 0;
-    if (!dark) flags |= View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
-    if (!dark && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O)
-      flags |= View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR;
-    getWindow().getDecorView().setSystemUiVisibility(flags);
+    identity.applyWindow(this);
   }
 
   @Override

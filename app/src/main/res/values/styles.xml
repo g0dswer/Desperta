@@ -1,12 +1,12 @@
 <resources>
     <style name="AppTheme" parent="android:style/Theme.Material.NoActionBar">
         <item name="android:fontFamily">sans</item>
-        <item name="android:colorAccent">#F6B95D</item>
-        <item name="android:windowLightStatusBar">false</item>
-        <item name="android:statusBarColor">#101A2A</item>
-        <item name="android:navigationBarColor">#101A2A</item>
+        <item name="android:colorAccent">#C6550B</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">#F5E7C9</item>
+        <item name="android:navigationBarColor">#F5E7C9</item>
         <item name="android:windowActionModeOverlay">true</item>
-        <item name="android:windowBackground">#101A2A</item>
+        <item name="android:windowBackground">#F5E7C9</item>
     </style>
     <style name="DespertaDialog" parent="android:style/Theme.Material.Dialog.Alert">
         <item name="android:colorAccent">#F6B95D</item>

@@ -16,7 +16,7 @@
  <uses-feature android:name="android.hardware.camera" android:required="false"/>
  <uses-feature android:name="android.hardware.sensor.stepdetector" android:required="false"/>
  <queries><intent><action android:name="android.speech.RecognitionService"/></intent><intent><action android:name="android.intent.action.TTS_SERVICE"/></intent><intent><action android:name="android.media.action.IMAGE_CAPTURE"/></intent></queries>
- <application android:theme="@style/AppTheme" android:label="Desperta" android:icon="@drawable/ic_alarm" android:allowBackup="false" android:supportsRtl="true">
+ <application android:theme="@style/AppTheme" android:label="Desperta" android:icon="@drawable/ic_launcher" android:allowBackup="false" android:supportsRtl="true">
  <activity android:name=".MainActivity" android:exported="true"><intent-filter><action android:name="android.intent.action.MAIN"/><category android:name="android.intent.category.LAUNCHER"/></intent-filter></activity>
  <activity android:name=".BarcodeLibraryActivity" android:exported="false"/>
  <activity

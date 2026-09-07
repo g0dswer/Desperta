@@ -32,8 +32,8 @@ import com.journeyapps.barcodescanner.camera.CenterCropStrategy;
 import java.util.ArrayList;
 
 /**
- * Full-screen portrait scanner. It owns the decode loop so a wrong code can be explained while
- * the camera remains open; the stock CaptureActivity closes after the first decode.
+ * Full-screen portrait scanner. It owns the decode loop so a wrong code can be explained while the
+ * camera remains open; the stock CaptureActivity closes after the first decode.
  */
 public final class AlarmCaptureActivity extends Activity {
   public static final String EXTRA_REGISTER_MODE = "desperta_register_mode";
@@ -41,15 +41,11 @@ public final class AlarmCaptureActivity extends Activity {
   public static final String EXTRA_EXPECTED_TARGETS = "desperta_expected_targets";
 
   private static final int REQUEST_CAMERA_PERMISSION = 701;
-  private static final int FG = Color.rgb(255, 246, 231);
-  private static final int MUTED = Color.rgb(173, 185, 201);
-  private static final int SUCCESS = Color.rgb(132, 213, 176);
-  private static final int ERROR = Color.rgb(255, 173, 176);
-
   private final Handler handler = new Handler();
   private DecoratedBarcodeView scanner;
   private BarcodeFinderView finder;
   private FrameLayout root;
+  private FrameLayout overlays;
   private TextView headline;
   private TextView instruction;
   private TextView feedback;
@@ -62,10 +58,12 @@ public final class AlarmCaptureActivity extends Activity {
   private final ArrayList<String> expectedTargets = new ArrayList<>();
   private boolean finishing;
   private int frameHeight;
+  private Identity theme;
 
   @Override
   protected void onCreate(Bundle state) {
     super.onCreate(state);
+    theme = Identity.current(this);
     setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
     configureWindow();
     readMissionIntent();
@@ -78,15 +76,15 @@ public final class AlarmCaptureActivity extends Activity {
   }
 
   private void configureWindow() {
+    if (theme == null) theme = Identity.current(this);
+    theme.applyWindow(this);
     Window window = getWindow();
-    window.setStatusBarColor(Color.BLACK);
-    window.setNavigationBarColor(Color.BLACK);
     window.addFlags(
         WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
             | WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
             | WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
     if (android.os.Build.VERSION.SDK_INT >= 28) {
-      window.setNavigationBarDividerColor(Color.BLACK);
+      window.setNavigationBarDividerColor(theme.bg);
     }
   }
 
@@ -117,7 +115,9 @@ public final class AlarmCaptureActivity extends Activity {
 
   private void buildContent() {
     root = new FrameLayout(this);
-    root.setBackgroundColor(Color.BLACK);
+    // Keep the live camera surface untouched. Identity styling is applied only to controls layered
+    // above it, never to the camera preview itself.
+    root.setBackgroundColor(Color.TRANSPARENT);
 
     scanner = new DecoratedBarcodeView(this);
     scanner.getBarcodeView().setPreviewScalingStrategy(new CenterCropStrategy());
@@ -128,24 +128,42 @@ public final class AlarmCaptureActivity extends Activity {
     finder = new BarcodeFinderView(this);
     root.addView(finder, new FrameLayout.LayoutParams(-1, -1));
 
-    headline = label(registerMode ? "Novo código" : solvePrompt(), 21, FG);
+    overlays = new FrameLayout(this);
+    root.addView(overlays, new FrameLayout.LayoutParams(-1, -1));
+
+    headline = label(registerMode ? "Novo código" : solvePrompt(), 21, theme.fg);
     headline.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+    theme.styleText(headline, true);
     headline.setGravity(Gravity.CENTER);
     headline.setContentDescription(registerMode ? "Novo código" : fullSolvePrompt());
     if (!registerMode && expectedTargets.size() > 1) {
       headline.setClickable(true);
       headline.setOnClickListener(view -> showFullCodeList());
     }
-    root.addView(headline, new FrameLayout.LayoutParams(-1, dp(58)));
+    // Keep scanner copy and instructions readable over any camera image without tinting the
+    // preview itself. Compact identity panels are confined to the labels outside the finder.
+    headline.setBackground(theme.panel(this));
+    headline.setPadding(dp(18), 0, dp(18), 0);
+    headline.setMinWidth(dp(220));
+    headline.setMaxWidth(dp(360));
+    overlays.addView(headline, new FrameLayout.LayoutParams(-2, dp(58)));
 
-    instruction = label("Posicione o QR/código de barras dentro do retângulo", 15, FG);
+    instruction = label("Posicione o QR/código de barras dentro do retângulo", 15, theme.fg);
     instruction.setGravity(Gravity.CENTER);
-    root.addView(instruction, new FrameLayout.LayoutParams(-1, dp(42)));
+    instruction.setBackground(theme.panel(this));
+    instruction.setPadding(dp(16), 0, dp(16), 0);
+    instruction.setMinWidth(dp(240));
+    instruction.setMaxWidth(dp(360));
+    overlays.addView(instruction, new FrameLayout.LayoutParams(-2, dp(42)));
 
-    feedback = label("", 15, MUTED);
+    feedback = label("", 15, theme.muted);
+    feedback.setVisibility(View.INVISIBLE);
     feedback.setGravity(Gravity.CENTER);
     feedback.setPadding(dp(18), 0, dp(18), 0);
-    root.addView(feedback, new FrameLayout.LayoutParams(-1, dp(58)));
+    feedback.setBackground(theme.panel(this));
+    feedback.setMinWidth(dp(220));
+    feedback.setMaxWidth(dp(360));
+    overlays.addView(feedback, new FrameLayout.LayoutParams(-2, dp(58)));
 
     torchButton = new ImageButton(this);
     torchButton.setBackgroundColor(Color.TRANSPARENT);
@@ -159,10 +177,13 @@ public final class AlarmCaptureActivity extends Activity {
           if (torchOn) scanner.setTorchOff();
           else scanner.setTorchOn();
         });
-    root.addView(torchButton, new FrameLayout.LayoutParams(dp(60), dp(60)));
-    torchLabel = label("Lanterna", 13, FG);
+    overlays.addView(torchButton, new FrameLayout.LayoutParams(dp(60), dp(60)));
+    torchLabel = label("Lanterna", 13, theme.fg);
     torchLabel.setGravity(Gravity.CENTER);
-    root.addView(torchLabel, new FrameLayout.LayoutParams(dp(120), dp(28)));
+    torchLabel.setBackground(theme.panel(this));
+    torchLabel.setPadding(dp(12), 0, dp(12), 0);
+    torchLabel.setMinWidth(dp(90));
+    overlays.addView(torchLabel, new FrameLayout.LayoutParams(-2, dp(28)));
     updateTorch();
 
     finder.setFrameListener(
@@ -189,6 +210,7 @@ public final class AlarmCaptureActivity extends Activity {
           }
         });
     setContentView(root);
+    theme.applyTree(overlays);
     scanner.initializeFromIntent(getIntent());
     scanner.decodeContinuous(new ResultCallback());
   }
@@ -199,26 +221,16 @@ public final class AlarmCaptureActivity extends Activity {
     int frameBottom = frameTop + frameHeight;
     setTopMargin(headline, Math.max(dp(14), frameTop - dp(122)));
     setTopMargin(instruction, Math.max(dp(14), frameTop - dp(58)));
-    FrameLayout.LayoutParams torchParams =
-        (FrameLayout.LayoutParams) torchButton.getLayoutParams();
-    torchParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-    torchParams.topMargin = frameBottom + dp(12);
-    torchButton.setLayoutParams(torchParams);
-    FrameLayout.LayoutParams torchLabelParams =
-        (FrameLayout.LayoutParams) torchLabel.getLayoutParams();
-    torchLabelParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-    torchLabelParams.topMargin = frameBottom + dp(68);
-    torchLabel.setLayoutParams(torchLabelParams);
-    FrameLayout.LayoutParams feedbackParams =
-        (FrameLayout.LayoutParams) feedback.getLayoutParams();
-    feedbackParams.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
-    feedbackParams.topMargin = frameBottom + dp(94);
-    feedback.setLayoutParams(feedbackParams);
+    setTopMargin(torchButton, frameBottom + dp(12));
+    setTopMargin(torchLabel, frameBottom + dp(68));
+    setTopMargin(feedback, frameBottom + dp(94));
   }
 
   private void setTopMargin(View view, int topMargin) {
     FrameLayout.LayoutParams params = (FrameLayout.LayoutParams) view.getLayoutParams();
-    params.gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+    int gravity = Gravity.TOP | Gravity.CENTER_HORIZONTAL;
+    if (params.gravity == gravity && params.topMargin == topMargin) return;
+    params.gravity = gravity;
     params.topMargin = topMargin;
     view.setLayoutParams(params);
   }
@@ -256,7 +268,8 @@ public final class AlarmCaptureActivity extends Activity {
       if (value.length() > 0) value.append('\n');
       value.append(code);
     }
-    new android.app.AlertDialog.Builder(this)
+    theme
+        .dialog(this)
         .setTitle("Códigos selecionados")
         .setMessage(value.toString())
         .setPositiveButton("Fechar", null)
@@ -283,14 +296,16 @@ public final class AlarmCaptureActivity extends Activity {
     String contents = result.getText();
     if (!matchesExpected(contents)) {
       finder.setFeedbackState(BarcodeFinderView.FeedbackState.ERROR);
+      feedback.setVisibility(View.VISIBLE);
       feedback.setText("Código lido, mas ele não está selecionado. Tente outro.");
-      feedback.setTextColor(ERROR);
+      feedback.setTextColor(theme.error);
       return;
     }
     finishing = true;
     finder.setFeedbackState(BarcodeFinderView.FeedbackState.SUCCESS);
+    feedback.setVisibility(View.VISIBLE);
     feedback.setText(registerMode ? "Código registrado" : "Código aceito");
-    feedback.setTextColor(SUCCESS);
+    feedback.setTextColor(theme.positive);
     root.performHapticFeedback(
         android.os.Build.VERSION.SDK_INT >= 30
             ? HapticFeedbackConstants.CONFIRM
@@ -315,7 +330,9 @@ public final class AlarmCaptureActivity extends Activity {
 
   private void updateTorch() {
     torchButton.setContentDescription(
-        !hasFlash ? "Lanterna indisponível neste aparelho" : torchOn ? "Desligar lanterna" : "Acender lanterna");
+        !hasFlash
+            ? "Lanterna indisponível neste aparelho"
+            : torchOn ? "Desligar lanterna" : "Acender lanterna");
     torchButton.setImageDrawable(new TorchIcon(torchOn));
   }
 
@@ -369,8 +386,9 @@ public final class AlarmCaptureActivity extends Activity {
     if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
       if (scanner != null) scanner.resume();
     } else {
+      feedback.setVisibility(View.VISIBLE);
       feedback.setText("A câmera é necessária para ler este código.");
-      feedback.setTextColor(ERROR);
+      feedback.setTextColor(theme.error);
     }
   }
 
@@ -383,7 +401,7 @@ public final class AlarmCaptureActivity extends Activity {
     finish();
   }
 
-  private static final class TorchIcon extends android.graphics.drawable.Drawable {
+  private final class TorchIcon extends android.graphics.drawable.Drawable {
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final boolean on;
 
@@ -396,7 +414,7 @@ public final class AlarmCaptureActivity extends Activity {
       canvas.save();
       canvas.translate(getBounds().left, getBounds().top);
       canvas.scale(getBounds().width() / 24f, getBounds().height() / 24f);
-      paint.setColor(FG);
+      paint.setColor(theme.fg);
       paint.setStyle(Paint.Style.FILL);
       Path bolt = new Path();
       bolt.moveTo(13, 1);

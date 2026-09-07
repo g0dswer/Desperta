@@ -11,6 +11,7 @@ import static org.junit.Assert.assertTrue;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.platform.app.InstrumentationRegistry;
 import androidx.test.rule.ActivityTestRule;
@@ -33,7 +34,7 @@ public final class SettingsWeatherTest {
 
   private Context context;
   private SharedPreferences preferences;
-  private String oldTheme;
+  private String oldIdentity;
   private String oldOutput;
 
   @Rule
@@ -44,27 +45,34 @@ public final class SettingsWeatherTest {
   public void setUp() {
     context = InstrumentationRegistry.getInstrumentation().getTargetContext();
     preferences = context.getSharedPreferences(Weather.PREFS, Context.MODE_PRIVATE);
-    oldTheme = preferences.getString("theme", null);
+    oldIdentity = preferences.getString(Identity.KEY, null);
     oldOutput = preferences.getString("output", null);
     Weather.clear(context);
   }
 
   @After
   public void tearDown() {
-    SharedPreferences.Editor editor = preferences.edit().remove("theme").remove("output");
-    if (oldTheme != null) editor.putString("theme", oldTheme);
+    SharedPreferences.Editor editor = preferences.edit().remove(Identity.KEY).remove("output");
+    if (oldIdentity != null) editor.putString(Identity.KEY, oldIdentity);
     if (oldOutput != null) editor.putString("output", oldOutput);
     editor.apply();
     Weather.clear(context);
   }
 
   @Test
-  public void settingsPersistThemeAndOutputChoices() {
+  public void settingsPersistIdentityAndOutputChoices() {
     onView(withText("Preferências")).check(matches(isDisplayed()));
 
-    onView(withText("Tema")).perform(click());
-    onView(withText("Claro")).perform(click());
-    assertEquals("light", preferences.getString("theme", ""));
+    onView(withText("Identidade")).perform(click());
+    onView(withText(org.hamcrest.Matchers.startsWith("Anos 90"))).perform(click());
+    assertEquals(Identity.NINETIES, preferences.getString(Identity.KEY, ""));
+    if (Build.VERSION.SDK_INT < 35) {
+      assertEquals(
+          Identity.current(context).bg, activityRule.getActivity().getWindow().getStatusBarColor());
+      assertEquals(
+          Identity.current(context).bg,
+          activityRule.getActivity().getWindow().getNavigationBarColor());
+    }
 
     onView(withText("Saída de som")).perform(click());
     onView(withText("Alto-falante")).perform(click());
@@ -80,7 +88,8 @@ public final class SettingsWeatherTest {
         "Open-Meteo success callback timed out",
         success.await(NETWORK_TIMEOUT_SECONDS, TimeUnit.SECONDS));
     assertTrue(
-        "successful weather response must have a timestamp", Weather.getCachedTime(context) > 0L);
+        "successful weather response must have a timestamp: " + Weather.getCachedText(context),
+        Weather.getCachedTime(context) > 0L);
     String text = Weather.getCachedText(context);
     assertFalse(
         "successful weather response must contain readable text",

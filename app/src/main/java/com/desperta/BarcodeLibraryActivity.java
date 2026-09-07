@@ -3,7 +3,9 @@ package com.desperta;
 import android.app.*;
 import android.content.*;
 import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.graphics.drawable.GradientDrawable;
+import android.graphics.drawable.LayerDrawable;
 import android.os.Bundle;
 import android.view.Gravity;
 import android.widget.*;
@@ -15,12 +17,14 @@ public class BarcodeLibraryActivity extends Activity {
   private final ArrayList<String> codes = new ArrayList<>();
   private final ArrayList<String> selected = new ArrayList<>();
   private static final String KEY = "barcode_library";
-  private final int cyan = 0xffF6B95D;
   private String feedback = "";
+  private Identity theme;
 
   @Override
   public void onCreate(Bundle state) {
     super.onCreate(state);
+    theme = Identity.current(this);
+    theme.applyWindow(this);
     try {
       JSONArray saved = new JSONArray(Store.prefs(this).getString(KEY, "[]"));
       for (int i = 0; i < saved.length(); i++) addUnique(codes, saved.getString(i));
@@ -69,26 +73,29 @@ public class BarcodeLibraryActivity extends Activity {
   private TextView label(String text, int size) {
     TextView view = new TextView(this);
     view.setText(text);
-    view.setTextColor(0xffFFF6E7);
+    view.setTextColor(theme.fg);
     view.setTextSize(size);
     view.setPadding(0, dp(10), 0, dp(10));
     return view;
   }
 
-  private GradientDrawable background(int color, boolean checked) {
-    GradientDrawable shape = new GradientDrawable();
-    shape.setColor(color);
-    shape.setCornerRadius(dp(14));
-    if (checked) shape.setStroke(dp(2), cyan);
-    return shape;
+  /** Keeps the identity-specific panel grammar while adding the selection outline. */
+  private Drawable codeRowBackground(boolean checked) {
+    Drawable panel = theme.panel(this);
+    if (!checked) return panel;
+    GradientDrawable outline = new GradientDrawable();
+    outline.setColor(Color.TRANSPARENT);
+    outline.setCornerRadius(dp(14));
+    outline.setStroke(dp(2), theme.accent);
+    return new LayerDrawable(new Drawable[] {panel, outline});
   }
 
   private Button button(String text, Runnable action) {
     Button button = new Button(this);
     button.setText(text);
     button.setAllCaps(false);
-    button.setTextColor(Color.BLACK);
-    button.setBackground(background(0xffFFF6E7, false));
+    button.setTextColor(theme.onAccent);
+    button.setBackground(theme.primary(this));
     LinearLayout.LayoutParams p = new LinearLayout.LayoutParams(-1, dp(56));
     p.setMargins(0, dp(8), 0, dp(8));
     button.setLayoutParams(p);
@@ -100,7 +107,7 @@ public class BarcodeLibraryActivity extends Activity {
     LinearLayout root = new LinearLayout(this);
     root.setOrientation(LinearLayout.VERTICAL);
     root.setPadding(dp(22), dp(16), dp(22), dp(16));
-    root.setBackgroundColor(0xff101A2A);
+    root.setBackground(theme.background(this));
     root.setOnApplyWindowInsetsListener(
         (v, in) -> {
           root.setPadding(
@@ -112,8 +119,9 @@ public class BarcodeLibraryActivity extends Activity {
         });
     setContentView(root);
     Button heading = button("‹  QR / Código de barras", this::finish);
+    theme.styleText(heading, true);
     heading.setBackgroundColor(Color.TRANSPARENT);
-    heading.setTextColor(0xffFFF6E7);
+    heading.setTextColor(theme.fg);
     heading.setTextSize(20);
     root.addView(heading);
     root.addView(
@@ -142,13 +150,13 @@ public class BarcodeLibraryActivity extends Activity {
       LinearLayout row = new LinearLayout(this);
       row.setGravity(Gravity.CENTER_VERTICAL);
       row.setPadding(dp(10), dp(8), dp(10), dp(8));
-      row.setBackground(background(0xff1B2A3D, selected.contains(code)));
+      row.setBackground(codeRowBackground(selected.contains(code)));
       LinearLayout.LayoutParams rp = new LinearLayout.LayoutParams(-1, -2);
       rp.setMargins(0, dp(6), 0, dp(6));
       list.addView(row, rp);
       CheckBox check = new CheckBox(this);
       check.setText(code);
-      check.setTextColor(0xffFFF6E7);
+      check.setTextColor(theme.fg);
       check.setTextSize(18);
       check.setChecked(selected.contains(code));
       row.addView(check, new LinearLayout.LayoutParams(0, -2, 1));
@@ -162,19 +170,22 @@ public class BarcodeLibraryActivity extends Activity {
           button(
               "⋮",
               () ->
-                  new AlertDialog.Builder(this)
+                  theme
+                      .dialog(this)
                       .setTitle("Código cadastrado")
                       .setItems(
                           new String[] {"Revisar código", "Excluir código"},
                           (dialog, item) -> {
                             if (item == 0)
-                              new AlertDialog.Builder(this)
+                              theme
+                                  .dialog(this)
                                   .setTitle("QR / Código de barras")
                                   .setMessage(code)
                                   .setPositiveButton("Fechar", null)
                                   .show();
                             else
-                              new AlertDialog.Builder(this)
+                              theme
+                                  .dialog(this)
                                   .setTitle("Excluir código?")
                                   .setMessage(
                                       "Remover da biblioteca e desta seleção? Outros alarmes salvos"
@@ -192,7 +203,7 @@ public class BarcodeLibraryActivity extends Activity {
                           })
                       .show());
       menu.setBackgroundColor(Color.TRANSPARENT);
-      menu.setTextColor(0xffFFF6E7);
+      menu.setTextColor(theme.fg);
       menu.setContentDescription("Opções do código " + code);
       row.addView(menu, new LinearLayout.LayoutParams(dp(48), dp(48)));
     }
@@ -211,8 +222,8 @@ public class BarcodeLibraryActivity extends Activity {
                     2));
     preview.setEnabled(!selected.isEmpty());
     LinearLayout footer = new LinearLayout(this);
-    preview.setBackground(background(0xff414147, false));
-    preview.setTextColor(0xffFFF6E7);
+    preview.setBackground(theme.secondary(this));
+    preview.setTextColor(theme.fg);
     LinearLayout.LayoutParams pp = new LinearLayout.LayoutParams(0, dp(56), 1);
     pp.setMargins(0, dp(8), dp(8), dp(8));
     footer.addView(preview, pp);
@@ -237,6 +248,7 @@ public class BarcodeLibraryActivity extends Activity {
                 setResult(RESULT_OK, new Intent().putExtra("remove", true));
                 finish();
               }));
+    theme.applyTree(root);
   }
 
   @Override

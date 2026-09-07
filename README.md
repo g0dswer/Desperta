@@ -1,10 +1,10 @@
 # Desperta
 
-Despertador Android gratuito, sem anúncios e sem login. Identidade Amanhecer e interface em português com alarmes recorrentes e até cinco missões para despertar. Android 8.0 ou superior.
+Despertador Android gratuito, sem anúncios e sem login. Quatro identidades visuais, Retrofuturista como padrão e interface em português com alarmes recorrentes e até cinco missões para despertar. Android 8.0 ou superior.
 
 ## Download
 
-**[Baixar APK assinado](https://github.com/g0dswer/Desperta/releases/download/v1.2.0/Desperta-1.2.0.apk)** · [Notas da versão](https://github.com/g0dswer/Desperta/releases/tag/v1.2.0).
+**[Baixar APK assinado](https://github.com/g0dswer/Desperta/releases/download/v1.3.0/Desperta-1.3.0.apk)** · [Notas da versão](https://github.com/g0dswer/Desperta/releases/tag/v1.3.0).
 
 Esta versão foi validada em emulador. Testes físicos de sensores, voz, Bluetooth e reconhecimento visual ainda estão pendentes; consulte a matriz de cobertura. Abra o APK no Android e autorize a instalação pelo navegador/gerenciador de arquivos. Em **Ajustes → Otimização do alarme**, confira alarmes exatos, notificações, tela cheia e bateria antes do primeiro uso.
 
@@ -31,10 +31,14 @@ Java 17, Android SDK 36 e Gradle Wrapper:
 
 Configure `sdk.dir` em `local.properties` ou `ANDROID_HOME`. O APK de depuração fica em `app/build/outputs/apk/debug/`. A versão de release é assinada fora do repositório; a chave privada não é publicada.
 
-Veja [testes da versão 1.2.0](docs/TESTES-1.2.0.md), [funcionalidades e evidências](docs/FUNCIONALIDADES.md) e [escopo do redesenho](docs/REDESIGN-1.2.0.md) e [privacidade](docs/PRIVACIDADE.md). A matriz distingue testes executados de validações que exigem aparelho físico. Uma compilação bem-sucedida não significa que todos os sensores foram validados.
+Veja [testes da versão 1.3.0](docs/TESTES-1.3.0.md), [identidades e revisão cega](docs/IDENTIDADES-1.3.0.md), [funcionalidades e evidências](docs/FUNCIONALIDADES.md) e [escopo do redesenho](docs/REDESIGN-1.2.0.md) e [privacidade](docs/PRIVACIDADE.md). A matriz distingue testes executados de validações que exigem aparelho físico. Uma compilação bem-sucedida não significa que todos os sensores foram validados.
 
-## Capturas
+## Identidades
 
-Capturas reais da versão 1.2.0 no emulador: [Alarmes](docs/screenshots/1.2.0/01-alarmes.png) · [Editor](docs/screenshots/1.2.0/02-editor.png) · [Tema claro e fonte ampliada](docs/screenshots/1.2.0/03-editor-claro-fonte.png) · [Leitor](docs/screenshots/1.2.0/05-leitor.png).
+Em **Ajustes → Identidade**, escolha Retrofuturista, Anos 90, Matrix ou Terminal antigo. A escolha vale para as telas do aplicativo e é salva automaticamente.
 
-<img src="docs/screenshots/1.2.0/01-alarmes.png" width="220" alt="Lista de alarmes Amanhecer"> <img src="docs/screenshots/1.2.0/02-editor.png" width="220" alt="Editor com horário por rolagem"> <img src="docs/screenshots/1.2.0/05-leitor.png" width="220" alt="Leitor vertical de QR e código de barras">
+Capturas reais da versão 1.3.0, na resolução das referências:
+
+<img src="docs/screenshots/1.3.0/retro.png" width="210" alt="Retrofuturista"> <img src="docs/screenshots/1.3.0/nineties.png" width="210" alt="Anos 90"> <img src="docs/screenshots/1.3.0/matrix.png" width="210" alt="Matrix"> <img src="docs/screenshots/1.3.0/terminal.png" width="210" alt="Terminal antigo">
+
+[Relatórios dos revisores e tratamento dos apontamentos](docs/evidence/1.3.0/blind-review/RESOLUCAO.md). As capturas são do aplicativo funcionando; os horários e alarmes são dados reais.

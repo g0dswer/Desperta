@@ -20,6 +20,7 @@ public class AppearanceFlowTest {
   UiDevice ui;
   ActivityScenario<MainActivity> scenario;
   String oldScale;
+  String oldIdentity;
 
   @Before
   public void setup() throws Exception {
@@ -27,6 +28,7 @@ public class AppearanceFlowTest {
     ui = UiDevice.getInstance(InstrumentationRegistry.getInstrumentation());
     for (Alarm a : Store.all(context)) Scheduler.cancel(context, a.id);
     context.stopService(new Intent(context, AlarmService.class));
+    oldIdentity = Store.prefs(context).getString(Identity.KEY, null);
     Store.prefs(context).edit().clear().putBoolean(UpdateChecker.KEY_AUTO_CHECK, false).commit();
     oldScale = ui.executeShellCommand("settings get system font_scale").trim();
   }
@@ -38,6 +40,7 @@ public class AppearanceFlowTest {
         "settings put system font_scale " + (oldScale.matches("[0-9.]+") ? oldScale : "1.0"));
     for (Alarm a : Store.all(context)) Scheduler.cancel(context, a.id);
     Store.prefs(context).edit().clear().commit();
+    if (oldIdentity != null) Identity.set(context, oldIdentity);
   }
 
   void click(String label) throws Exception {
@@ -67,16 +70,16 @@ public class AppearanceFlowTest {
   }
 
   @Test
-  public void lightThemeAtLargeFontKeepsEditorAndSaveUsable() throws Exception {
-    Store.prefs(context).edit().putString("theme", "light").commit();
+  public void retroIdentityAtLargeFontKeepsEditorAndSaveUsable() throws Exception {
+    Identity.set(context, Identity.RETRO);
     ui.executeShellCommand("settings put system font_scale 1.3");
     scenario = ActivityScenario.launch(MainActivity.class);
     ui.waitForIdle();
-    click("+ Alarme");
-    capture("amanhecer-editor-light-large.png");
+    desc("Adicionar alarme");
+    capture("retro-editor-light-large.png");
     desc("Nome do alarme:");
     ui.findObject(new UiSelector().className("android.widget.EditText")).setText("Letras grandes");
-    capture("amanhecer-dialog-light-large.png");
+    capture("retro-dialog-light-large.png");
     click("Confirmar");
     UiObject save = ui.findObject(new UiSelector().text("Salvar alarme"));
     Rect bounds = save.getVisibleBounds();
@@ -89,7 +92,8 @@ public class AppearanceFlowTest {
   }
 
   @Test
-  public void darkEditorAndNextAlarmRemainClearAfterSaving() throws Exception {
+  public void retroEditorAndNextAlarmRemainClearAfterSaving() throws Exception {
+    Identity.set(context, Identity.RETRO);
     Alarm alarm = new Alarm();
     alarm.label = "Trabalho";
     alarm.days = 62;
@@ -97,9 +101,9 @@ public class AppearanceFlowTest {
     Store.save(context, alarm);
     scenario = ActivityScenario.launch(MainActivity.class);
     ui.waitForIdle();
-    capture("amanhecer-alarmes.png");
+    capture("retro-alarmes.png");
     desc("Editar alarme Trabalho");
-    capture("amanhecer-editor.png");
+    capture("retro-editor.png");
     desc("Como desligar,");
     assertTrue(ui.findObject(new UiSelector().textContains("7891035002427")).exists());
     click("Salvar alarme");
