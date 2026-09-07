@@ -1,0 +1,9 @@
+
+com.desperta.IdentityFlowTest:...........
+com.desperta.ScannerAppearanceTest:.
+
+Time: 119.392
+
+OK (12 tests)
+
+

@@ -1,0 +1,4 @@
+Signer #1 certificate DN: CN=Desperta, OU=Android, O=Desperta
+Signer #1 certificate SHA-256 digest: 07758ac88794b016734969479b0d05cb9f8c42a8522afb20a828530e324d0d20
+Signer #1 certificate SHA-1 digest: 8268e1c08ceef59bcdf433cc5ba1bd2e7555992f
+Signer #1 certificate MD5 digest: e61aeda3a640a92c9fddf9ac45443c59

@@ -8,6 +8,7 @@ Ambiente: emulador Pixel 7 ARM64, Android 15 / API 35. Aplicativo assinado com a
 - Build de release e lint: aprovados. Assinatura APK v2/v3 conferida.
 - Execução integrada: **59 testes Android aprovados**, 411,962 segundos, sem falhas ou ignorados. [Registro completo](evidence/1.3.0/android-integrated-59.txt).
 - Regressão de interface após ajustes visuais: **25 testes aprovados**, 306,733 segundos; inicial, editor, fonte ampliada, horário por rolagem e quatro identidades. [Registro](evidence/1.3.0/android-ui-25.txt).
+- Conferência final do APK de distribuição: **12 testes de identidades e aparência do leitor aprovados**, 119,392 segundos, depois dos últimos ajustes no cabeçalho Anos 90, fundo das janelas e menu Terminal. [Registro](evidence/1.3.0/android-final-identities-12.txt).
 - Quatro capturas adicionais na resolução de cada referência: aprovadas. [Capturas reais](screenshots/1.3.0/).
 
 ## Cobertura
@@ -42,3 +43,5 @@ O teste de QR repetido por identidade inicia o serviço de alarme e verifica seu
 Testes no emulador não substituem validação física de câmera Samsung, voz, vibração, movimento, passos, agachamentos, Bluetooth e reconhecimento de cenas reais. Mantêm-se os limites da [matriz geral](FUNCIONALIDADES.md).
 
 Os revisores não certificaram igualdade pixel a pixel. Foram corrigidas diferenças de composição e defeitos identificados; rasterização de fontes, relevos, texturas e componentes nativos ainda podem diferir das imagens geradas. As barras e diálogos de instalação/permissão pertencem ao Android. Não houve estudo de usabilidade com participantes.
+
+A [validação no GitHub Actions](https://github.com/g0dswer/Desperta/actions/runs/34166682047) passou no commit de código `a995e80`.
