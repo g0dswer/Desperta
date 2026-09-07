@@ -1,0 +1,2 @@
+APK instalado pelo atualizador coincide com o APK publicado/testado.
+SHA-256: 38e8222d996c0ac59d3cce4f17bacd74a8451fdd3ee3a51d68989f5b7b915d86

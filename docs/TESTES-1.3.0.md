@@ -45,3 +45,15 @@ Testes no emulador não substituem validação física de câmera Samsung, voz, 
 Os revisores não certificaram igualdade pixel a pixel. Foram corrigidas diferenças de composição e defeitos identificados; rasterização de fontes, relevos, texturas e componentes nativos ainda podem diferir das imagens geradas. As barras e diálogos de instalação/permissão pertencem ao Android. Não houve estudo de usabilidade com participantes.
 
 A [validação no GitHub Actions](https://github.com/g0dswer/Desperta/actions/runs/34166682047) passou no commit de código `a995e80`.
+
+## Atualização pública 1.2.0 → 1.3.0
+
+Ensaio executado com o APK público original 1.2.0, sem cliente modificado. Foi criado pela interface o alarme diário `Atualizacao preservada v130`, às 07:30. O próprio app encontrou a 1.3.0 no GitHub, baixou e conferiu o APK, abriu a permissão de instalação e o instalador do Android. Após confirmar a atualização, o alarme continuou salvo e ativado e a identidade padrão passou a Retrofuturista. Nova consulta informou que a 1.3.0 já era a versão mais recente.
+
+O Android marcou novamente a autorização de notificações em tela cheia como pendente após a instalação. O app mostrou **Revisar permissões do alarme**; o caminho pela interface abriu a configuração correta e, após a autorização, mostrou **Pronto**. Alarmes exatos e notificações permaneceram autorizados.
+
+O APK efetivamente instalado pelo atualizador foi extraído e seu SHA-256 coincidiu com o APK de distribuição: `38e8222d996c0ac59d3cce4f17bacd74a8451fdd3ee3a51d68989f5b7b915d86`. [Registro](evidence/1.3.0/installed-apk-verification.txt).
+
+Capturas: [alarme na 1.2.0](screenshots/1.3.0/upgrade-01-before.png), [oferta pública](screenshots/1.3.0/upgrade-02-available.png), [download conferido](screenshots/1.3.0/upgrade-03-verified.png), [instalador](screenshots/1.3.0/upgrade-04-installer.png), [alarme preservado](screenshots/1.3.0/upgrade-05-preserved.png), [1.3.0 atualizada](screenshots/1.3.0/upgrade-06-current.png).
+
+A validação do commit de publicação também [passou no GitHub Actions](https://github.com/g0dswer/Desperta/actions/runs/34166856758).

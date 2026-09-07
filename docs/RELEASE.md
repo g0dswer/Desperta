@@ -14,7 +14,7 @@ Gratuito, sem anúncios e sem login. Instale sobre a versão anterior para prese
 
 ## Validação
 
-31 testes de lógica e 59 testes Android aprovados na execução integrada. Após os últimos ajustes visuais, as verificações de interface e das quatro identidades foram repetidas no APK assinado. Consulte [o relatório de testes](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.3.0.md) e [a revisão das identidades](https://github.com/g0dswer/Desperta/blob/main/docs/IDENTIDADES-1.3.0.md).
+31 testes de lógica e 59 testes Android aprovados na execução integrada. Após os ajustes visuais, passaram 25 testes de regressão de interface e, no APK final, mais 12 verificações de identidades e leitor. A atualização real da 1.2.0 pelo próprio app também passou, preservando o alarme salvo. Consulte [o relatório de testes](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.3.0.md) e [a revisão das identidades](https://github.com/g0dswer/Desperta/blob/main/docs/IDENTIDADES-1.3.0.md).
 
 Validação em emulador Android 15; sensores e câmera físicos conservam os limites documentados. A comparação visual não certifica igualdade pixel a pixel com as imagens geradas. Mantida a classificação de pré-lançamento.
 
