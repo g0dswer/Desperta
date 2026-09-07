@@ -83,5 +83,57 @@
     "ignored": 0,
     "seconds": 288.443,
     "log": "android-1.2.0-final.txt"
+  },
+  "extra_android": [
+    {
+      "scenario": "EAN13 camera pipeline",
+      "tests": 5,
+      "failures": 0,
+      "seconds": 20.374,
+      "log": "android-1.2.0-ean13.txt"
+    },
+    {
+      "scenario": "Scheduled QR alarm with PIN lock",
+      "tests": 1,
+      "failures": 0,
+      "seconds": 9.275,
+      "log": "android-1.2.0-pin.txt"
+    }
+  ],
+  "release": {
+    "url": "https://github.com/g0dswer/Desperta/releases/tag/v1.2.0",
+    "tag": "v1.2.0",
+    "commit": "12f2274f357f2427533b6525a783dafea98c373e",
+    "prerelease": true,
+    "assets": [
+      {
+        "name": "Desperta-1.2.0.apk",
+        "size": 132416822,
+        "digest": "sha256:f18fc06d5b4d72862ec95034ad5ab450585c69262a90651cf02ca4f6b72dc3ff",
+        "browser_download_url": "https://github.com/g0dswer/Desperta/releases/download/v1.2.0/Desperta-1.2.0.apk"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "size": 85,
+        "digest": "sha256:55f93c5a1b745bb39b424532aeff434175e6e15a933ab934db33fc9969162ee9",
+        "browser_download_url": "https://github.com/g0dswer/Desperta/releases/download/v1.2.0/SHA256SUMS.txt"
+      }
+    ],
+    "ci": {
+      "run": "https://github.com/g0dswer/Desperta/actions/runs/34158879826",
+      "conclusion": "success"
+    }
+  },
+  "updater_e2e": {
+    "result": "passed",
+    "from_version": "1.1.9 QA client with same updater and signer",
+    "from_versionCode": 2,
+    "to_version": "1.2.0 public release",
+    "to_versionCode": 3,
+    "installed_sha256": "f18fc06d5b4d72862ec95034ad5ab450585c69262a90651cf02ca4f6b72dc3ff",
+    "alarm_preserved": "Atualizacao preservada, 07:30 daily",
+    "alarm_rescheduled": "RTC_WAKEUP exact",
+    "android_install_confirmation": true,
+    "subsequent_check": "current"
   }
 }

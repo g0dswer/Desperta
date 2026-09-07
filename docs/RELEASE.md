@@ -17,7 +17,7 @@ A biblioteca de códigos mantém o formato atual, conforme solicitado. Não fora
 
 ## Testes
 
-**31 testes de lógica e 48 testes Android passaram**, além do build de release e lint.
+**31 testes de lógica e 48 testes Android passaram**, além do build de release e lint. Passaram também os ensaios extras de câmera com EAN-13, alarme com PIN e atualização real pelo app a partir do GitHub, preservando o alarme salvo.
 
 Consulte o [relatório da versão](https://github.com/g0dswer/Desperta/blob/main/docs/TESTES-1.2.0.md) e a [matriz do redesenho](https://github.com/g0dswer/Desperta/blob/main/docs/REDESIGN-1.2.0.md). A validação usa Android 15 em emulador; câmera e sensores físicos continuam com os limites descritos na documentação. Mantida a classificação de pré-lançamento.
 

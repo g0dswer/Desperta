@@ -1,0 +1,20 @@
+Public updater E2E: passed
+Installed SHA256: f18fc06d5b4d72862ec95034ad5ab450585c69262a90651cf02ca4f6b72dc3ff
+QA 1.1.9 -> public 1.2.0 via download and Android installer UI
+Alarm preserved: Atualizacao preservada, 07:30 daily
+Subsequent public check: current version
+
+    versionCode=3 minSdk=26 targetSdk=35
+    versionName=1.2.0
+    lastUpdateTime=2026-09-07 17:22:50
+      firstInstallTime=2026-09-07 17:18:16
+    RTC_WAKEUP #38: Alarm{4963e20 type 0 origWhen 1788863400000 whenElapsed 131513713 com.desperta}
+      tag=*walarm*:com.desperta.action.ALARM
+      type=RTC_WAKEUP origWhen=2026-09-08 07:30:00.000 window=0 exactAllowReason=permission repeatInterval=0 count=0 flags=0x3
+        showIntent=PendingIntent{7a663d9: PendingIntentRecord{71ad19e com.desperta startActivity}}
+      operation=PendingIntent{7d947f: PendingIntentRecord{1f11c4c com.desperta broadcastIntent}}
+  Next wake from idle: Alarm{4963e20 type 0 origWhen 1788863400000 whenElapsed 131513713 com.desperta}
+    tag=*walarm*:com.desperta.action.ALARM
+    type=RTC_WAKEUP origWhen=2026-09-08 07:30:00.000 window=0 exactAllowReason=permission repeatInterval=0 count=0 flags=0x3
+      showIntent=PendingIntent{7a663d9: PendingIntentRecord{71ad19e com.desperta startActivity}}
+    operation=PendingIntent{7d947f: PendingIntentRecord{1f11c4c com.desperta broadcastIntent}}
